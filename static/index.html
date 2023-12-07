@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>letters to steve</title>
+
+    <!-- Tailwind CSS Play CDN https://tailwindcss.com/docs/installation/play-cdn -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.9"></script>
+</head>
+
+<body class="flex items-center justify-center h-screen">
+    <div class="text-center">
+        <h1 class="text-2xl font-bold">letters to steve</h1>
+        <button id="helloButton" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            hx-trigger="click" hx-swap="outerHTML" hx-target="#hello">
+            say hello to steve
+        </button>
+        <div id="hello" class="mt-4"></div>
+    </div>
+    <script>
+        fetch('/config.json')
+            .then(response => response.json())
+            .then(data => {
+                var helloButton = document.getElementById('helloButton');
+                helloButton.setAttribute('hx-post', `${data.api}/hello-steve`);
+                htmx.process(helloButton);
+            });
+    </script>
+</body>
+
+</html>
