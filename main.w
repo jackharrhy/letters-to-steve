@@ -3,8 +3,13 @@ bring util;
 bring http;
 bring expect;
 
+let domain = new cloud.Domain(
+  domainName: "steve-letter-writ.ing",
+);
+
 let website = new cloud.Website(
   path: "./static",
+  domain: domain,
 ) as "letters-to-steve-site";
 
 let api = new cloud.Api({
