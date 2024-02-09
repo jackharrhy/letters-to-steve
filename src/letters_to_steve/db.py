@@ -1,7 +1,11 @@
+from pathlib import Path
 from contextlib import asynccontextmanager
 import aiosqlite
 
-DB_FILE = "steve.db"
+DB_FOLDER = "./data"
+Path(DB_FOLDER).mkdir(parents=True, exist_ok=True)
+
+DB_FILE = Path(DB_FOLDER) / "steve.db"
 
 
 @asynccontextmanager
