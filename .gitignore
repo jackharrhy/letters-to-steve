@@ -1,2 +1,4 @@
-target
-.env
+.venv
+.ruff_cache
+__pycache__
+*.db
