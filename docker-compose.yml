@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  letters-to-steve:
+    image: ghcr.io/jackharrhy/letters-to-steve
+    build: .
+    ports:
+      - "127.0.0.1:8000:80"
