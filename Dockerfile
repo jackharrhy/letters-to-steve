@@ -8,7 +8,8 @@ COPY ./requirements.lock ./requirements.lock
 COPY ./src ./src
 COPY ./templates ./templates
 COPY ./static ./static
+COPY ./prod.py ./prod.py
 
 RUN pip install --no-cache-dir --upgrade -r ./requirements.lock
 
-CMD ["uvicorn", "letters_to_steve:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80"]
+CMD ["python", "prod.py"]

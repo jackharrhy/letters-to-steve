@@ -66,4 +66,4 @@ def dev():
 
 def prod():
     asyncio.run(shared())
-    uvicorn.run("letters_to_steve:app", port=5000)
+    uvicorn.run("letters_to_steve:app", host="0.0.0.0", port=5000)
