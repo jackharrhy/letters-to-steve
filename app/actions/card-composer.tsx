@@ -2,8 +2,10 @@ import type { Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import type { FormErrors, LetterFormValues } from './home-page.tsx'
+import { RichLetterEditor } from './write/public/rich-letter-editor.tsx'
 
 interface CardComposerProps {
+  draftToken: string
   errors: FormErrors
   sent: boolean
   values: LetterFormValues
@@ -11,7 +13,7 @@ interface CardComposerProps {
 
 export function CardComposer(handle: Handle<CardComposerProps>) {
   return () => {
-    let { errors, sent, values } = handle.props
+    let { draftToken, errors, sent, values } = handle.props
 
     return (
       <section className="composer write-composer" id="write" aria-labelledby="composer-title">
@@ -32,18 +34,28 @@ export function CardComposer(handle: Handle<CardComposerProps>) {
         <form action={routes.createLetter.href()} method="post">
           <div className="field letter-field">
             <label htmlFor="letter-body">letter</label>
-            <textarea
-              id="letter-body"
-              className="letter-textarea"
-              name="body"
-              rows={18}
-              maxLength={5000}
-              required
+            <RichLetterEditor
+              allowImages
               autoFocus
-              aria-invalid={Boolean(errors.body)}
-              aria-describedby={errors.body ? 'body-error' : undefined}
-              defaultValue={values.body}
+              body={values.body}
+              bodyJson={values.bodyJson}
+              describedBy={errors.body ? 'body-error letter-help' : 'letter-help'}
+              draftToken={draftToken}
+              draftTokenFieldName="draftToken"
+              fieldName="body"
+              fontFieldName="fontKey"
+              fontKey={values.fontKey}
+              id="letter-body"
+              invalid={Boolean(errors.body)}
+              jsonFieldName="bodyJson"
+              label="Letter"
+              required
+              showFontPicker
+              uploadUrl={routes.uploads.create.href()}
             />
+            <span className="field-help" id="letter-help">
+              Add up to 10 JPEG, PNG, or WebP images. 10 MB each.
+            </span>
             {errors.body ? (
               <span className="field-error" id="body-error">
                 {errors.body}

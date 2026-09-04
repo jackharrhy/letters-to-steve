@@ -1,14 +1,18 @@
 import type { Handle } from 'remix/ui'
 
-import type { Issue, IssueLetter, Letter } from '../../data/schema.ts'
+import type { FontKey, Issue, IssueLetter, Letter } from '../../data/schema.ts'
 import { routes } from '../../routes.ts'
+import { RichText } from '../../ui/rich-text.tsx'
 import { Document } from '../document.tsx'
+import { RichLetterEditor } from '../write/public/rich-letter-editor.tsx'
 
 export interface AdminIssue extends Issue {
   letters: Array<
     IssueLetter & {
       originalAuthor: string
       originalBody: string
+      originalBodyJson: string | null
+      originalFontKey: FontKey
     }
   >
 }
@@ -93,7 +97,15 @@ function NewIssueForm() {
       method="post"
     >
       <label htmlFor="new-response">reply to the selected letters</label>
-      <textarea id="new-response" name="response" rows={8} maxLength={5000} />
+      <RichLetterEditor
+        body=""
+        bodyJson=""
+        fieldName="response"
+        fontKey="book"
+        id="new-response"
+        jsonFieldName="responseJson"
+        label="Steve's reply"
+      />
       <div className="button-row">
         <button type="submit" name="intent" value="draft" className="secondary-button">
           save draft
@@ -123,7 +135,12 @@ function InboxLetter(handle: Handle<{ letter: Letter }>) {
           <span>{letter.can_publish ? 'publishable' : 'private'}</span>
         </header>
 
-        <p className="inbox-body">{letter.body}</p>
+        <RichText
+          className="inbox-body"
+          fallback={letter.body}
+          fontKey={letter.font_key}
+          json={letter.body_json}
+        />
 
         <div className="letter-controls">
           {letter.can_publish ? (
@@ -216,20 +233,28 @@ function IssueEditor(handle: Handle<{ issue: AdminIssue }>) {
                 </div>
                 <div className="field">
                   <label htmlFor={`body-${letter.id}`}>letter</label>
-                  <textarea
+                  <RichLetterEditor
+                    body={letter.public_body}
+                    bodyJson={letter.public_body_json ?? ''}
+                    fieldName={`body-${letter.id}`}
+                    fontFieldName={`fontKey-${letter.id}`}
+                    fontKey={letter.font_key}
                     id={`body-${letter.id}`}
-                    name={`body-${letter.id}`}
-                    rows={4}
-                    maxLength={5000}
+                    jsonFieldName={`bodyJson-${letter.id}`}
+                    label={`Published letter ${index + 1}`}
                     required
-                    defaultValue={letter.public_body}
+                    showFontPicker
                   />
                 </div>
                 {letter.public_author !== letter.originalAuthor ||
                 letter.public_body !== letter.originalBody ? (
                   <details className="original-letter">
                     <summary>original</summary>
-                    <p>{letter.originalBody}</p>
+                    <RichText
+                      fallback={letter.originalBody}
+                      fontKey={letter.originalFontKey}
+                      json={letter.originalBodyJson}
+                    />
                     <strong>{letter.originalAuthor}</strong>
                   </details>
                 ) : null}
@@ -239,13 +264,15 @@ function IssueEditor(handle: Handle<{ issue: AdminIssue }>) {
 
           <div className="field">
             <label htmlFor={`response-${issue.id}`}>Steve's reply</label>
-            <textarea
+            <RichLetterEditor
+              body={issue.response}
+              bodyJson={issue.response_json ?? ''}
+              fieldName="response"
+              fontKey="book"
               id={`response-${issue.id}`}
-              name="response"
-              rows={8}
-              maxLength={5000}
+              jsonFieldName="responseJson"
+              label="Steve's reply"
               required={isPublished}
-              defaultValue={issue.response}
             />
           </div>
 
@@ -286,7 +313,12 @@ function ArchivedLetter(handle: Handle<{ letter: Letter }>) {
             {formatDate(letter.created_at)}
           </time>
         </header>
-        <p className="inbox-body">{letter.body}</p>
+        <RichText
+          className="inbox-body"
+          fallback={letter.body}
+          fontKey={letter.font_key}
+          json={letter.body_json}
+        />
         <form
           action={routes.steve.updateLetter.href({ letterId: String(letter.id) })}
           method="post"

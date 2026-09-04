@@ -3,6 +3,9 @@ import { column as c, table, type TableRow } from 'remix/data-table'
 export const letterStates = ['inbox', 'draft', 'published', 'archived'] as const
 export type LetterState = (typeof letterStates)[number]
 
+export const fontKeys = ['handwritten', 'book', 'plain'] as const
+export type FontKey = (typeof fontKeys)[number]
+
 export const letters = table({
   name: 'letters',
   columns: {
@@ -10,6 +13,8 @@ export const letters = table({
     author: c.text().notNull(),
     email: c.text().nullable(),
     body: c.text().notNull(),
+    body_json: c.text().nullable(),
+    font_key: c.enum(fontKeys).notNull(),
     can_publish: c.boolean().notNull(),
     state: c.enum(letterStates).notNull(),
     created_at: c.integer().notNull(),
@@ -27,6 +32,7 @@ export const issues = table({
   columns: {
     id: c.integer().primaryKey().autoIncrement(),
     response: c.text().notNull(),
+    response_json: c.text().nullable(),
     state: c.enum(issueStates).notNull(),
     created_at: c.integer().notNull(),
     updated_at: c.integer().notNull(),
@@ -53,7 +59,31 @@ export const issueLetters = table({
     position: c.integer().notNull(),
     public_author: c.text().notNull(),
     public_body: c.text().notNull(),
+    public_body_json: c.text().nullable(),
+    font_key: c.enum(fontKeys).notNull(),
   },
 })
 
 export type IssueLetter = TableRow<typeof issueLetters>
+
+export const attachments = table({
+  name: 'attachments',
+  columns: {
+    id: c.text().primaryKey(),
+    draft_token: c.text().notNull(),
+    letter_id: c
+      .integer()
+      .nullable()
+      .references('letters', 'id', 'attachments_letter_fk')
+      .onDelete('cascade'),
+    storage_key: c.text().notNull().unique(),
+    mime_type: c.text().notNull(),
+    byte_size: c.integer().notNull(),
+    width: c.integer().notNull(),
+    height: c.integer().notNull(),
+    is_public: c.boolean().notNull(),
+    created_at: c.integer().notNull(),
+  },
+})
+
+export type Attachment = TableRow<typeof attachments>

@@ -6,6 +6,10 @@ export const routes = route({
   write: get('/write'),
   issue: get('/letters/:issueId'),
   createLetter: post('/letters'),
+  uploads: route('uploads', {
+    create: post('/'),
+    show: get('/:attachmentId'),
+  }),
   steve: route('steve', {
     index: get('/'),
     createIssue: post('/issues'),

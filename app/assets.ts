@@ -11,8 +11,27 @@ export const assets = createAssetServer({
   rootDir,
 
   allowFiles: ['app/routes.ts', 'app/**/public/**'],
-  allowPackages: ['remix'],
+  allowPackages: [
+    'remix',
+    '@tiptap/core',
+    '@tiptap/extension-blockquote',
+    '@tiptap/extension-bold',
+    '@tiptap/extension-document',
+    '@tiptap/extension-hard-break',
+    '@tiptap/extension-image',
+    '@tiptap/extension-italic',
+    '@tiptap/extension-link',
+    '@tiptap/extension-list',
+    '@tiptap/extension-paragraph',
+    '@tiptap/extension-placeholder',
+    '@tiptap/extension-text',
+    '@tiptap/extensions',
+    '@tiptap/pm',
+    '@fontsource-variable/shantell-sans',
+    '@fontsource-variable/literata',
+  ],
   denyFiles: ['app/**/*.test.*'],
+  files: { extensions: ['.woff2'] },
   sourceMaps: isDevelopment ? 'external' : undefined,
   minify: !isDevelopment,
   watch: isDevelopment,
@@ -21,3 +40,5 @@ export const assets = createAssetServer({
     : undefined,
   scripts: { loaders: isHmr ? [uiHmr()] : undefined },
 })
+
+export const browserEntryHref = await assets.getHref('app/actions/public/entry.ts')

@@ -1,12 +1,20 @@
 import * as s from 'remix/data-schema'
 import { maxLength, minLength } from 'remix/data-schema/checks'
 import { inList } from 'remix/data-table/operators'
+import type { SqliteDatabase } from 'remix/data-table/sqlite'
 import { createController } from 'remix/router'
 import { redirect } from 'remix/response/redirect'
 
-import { issueLetters, issues, letters } from '../../data/schema.ts'
+import { attachments, fontKeys, issueLetters, issues, letters } from '../../data/schema.ts'
 import { databaseContext } from '../../middleware/database.ts'
 import { routes } from '../../routes.ts'
+import {
+  MAX_RICH_TEXT_BYTES,
+  normalizeFontKey,
+  normalizeRichText,
+  RichTextValidationError,
+  type NormalizedRichText,
+} from '../../ui/rich-text.tsx'
 import { challengeSteve, getSteveAccess } from './auth.ts'
 import { SteveInboxPage, type AdminIssue } from './inbox-page.tsx'
 
@@ -22,12 +30,14 @@ const positiveId = s
 const createIssueSchema = s.object({
   intent: s.enum_(['draft', 'publish'] as const),
   letterIds: s.array(positiveId),
-  response: trimmedString.pipe(maxLength(5000)),
+  response: s.string().pipe(maxLength(5000)),
+  responseJson: s.string().pipe(maxLength(MAX_RICH_TEXT_BYTES)),
 })
 
 const updateIssueSchema = s.object({
   intent: s.enum_(['save', 'publish', 'unpublish', 'discard'] as const),
-  response: trimmedString.pipe(maxLength(5000)),
+  response: s.string().pipe(maxLength(5000)),
+  responseJson: s.string().pipe(maxLength(MAX_RICH_TEXT_BYTES)),
 })
 
 const updateLetterSchema = s.object({
@@ -36,7 +46,9 @@ const updateLetterSchema = s.object({
 
 const publicLetterSchema = s.object({
   author: trimmedString.pipe(minLength(1), maxLength(40)),
-  body: trimmedString.pipe(minLength(1), maxLength(5000)),
+  body: s.string().pipe(maxLength(5000)),
+  bodyJson: s.string().pipe(maxLength(MAX_RICH_TEXT_BYTES)),
+  fontKey: s.enum_(fontKeys),
 })
 
 export default createController(routes.steve, {
@@ -73,6 +85,8 @@ export default createController(routes.steve, {
               ...link,
               originalAuthor: original?.author ?? link.public_author,
               originalBody: original?.body ?? link.public_body,
+              originalBodyJson: original?.body_json ?? link.public_body_json,
+              originalFontKey: original?.font_key ?? link.font_key,
             }
           }),
       }))
@@ -86,13 +100,14 @@ export default createController(routes.steve, {
       let rejection = requireSteveAction(context.request)
       if (rejection) return rejection
 
-      let form = context.get(FormData)
+      let form = await context.request.formData()
       let parsed = s.parseSafe(createIssueSchema, {
         intent: readText(form, 'intent'),
         letterIds: form.getAll('letterId').map((value) =>
           typeof value === 'string' ? value : '',
         ),
         response: readText(form, 'response'),
+        responseJson: readText(form, 'responseJson'),
       })
       if (!parsed.success) {
         return new Response('Choose letters and write a reply of no more than 5000 characters.', {
@@ -104,7 +119,12 @@ export default createController(routes.steve, {
       if (letterIds.length === 0) {
         return new Response('Choose at least one letter.', { status: 400 })
       }
-      if (parsed.value.intent === 'publish' && parsed.value.response.length === 0) {
+      let richResponse = readRichText(parsed.value.responseJson, parsed.value.response, {
+        allowEmpty: true,
+        allowImages: false,
+      })
+      if (richResponse instanceof Response) return richResponse
+      if (parsed.value.intent === 'publish' && richResponse.text.length === 0) {
         return new Response('Write Steve\'s reply before publishing.', { status: 400 })
       }
 
@@ -128,7 +148,8 @@ export default createController(routes.steve, {
         let created = await transaction.create(
           issues,
           {
-            response: parsed.value.response,
+            response: richResponse.text,
+            response_json: richResponse.json,
             state: parsed.value.intent === 'publish' ? 'published' : 'draft',
             created_at: now,
             updated_at: now,
@@ -145,8 +166,21 @@ export default createController(routes.steve, {
             position,
             public_author: letter!.author,
             public_body: letter!.body,
+            public_body_json: letter!.body_json,
+            font_key: letter!.font_key,
           })),
         )
+
+        if (parsed.value.intent === 'publish') {
+          await syncPublicAttachments(
+            transaction,
+            ordered.map((letter) => ({
+              attachmentIds: readStoredAttachmentIds(letter!.body_json, letter!.body),
+              letterId: letter!.id,
+            })),
+            true,
+          )
+        }
 
         await transaction.updateMany(
           letters,
@@ -168,14 +202,21 @@ export default createController(routes.steve, {
       let issueId = readId(context.params.issueId)
       if (issueId === null) return new Response('Letter not found.', { status: 404 })
 
-      let form = context.get(FormData)
+      let form = await context.request.formData()
       let parsed = s.parseSafe(updateIssueSchema, {
         intent: readText(form, 'intent'),
         response: readText(form, 'response'),
+        responseJson: readText(form, 'responseJson'),
       })
       if (!parsed.success) {
         return new Response('Write a reply of no more than 5000 characters.', { status: 400 })
       }
+
+      let richResponse = readRichText(parsed.value.responseJson, parsed.value.response, {
+        allowEmpty: true,
+        allowImages: false,
+      })
+      if (richResponse instanceof Response) return richResponse
 
       let database = context.get(databaseContext)
       let result = await database.transaction(async (transaction) => {
@@ -197,29 +238,45 @@ export default createController(routes.steve, {
             { state: 'inbox' },
             { where: inList(letters.id, links.map((link) => link.letter_id)) },
           )
+          await syncPublicAttachments(
+            transaction,
+            links.map((link) => ({ attachmentIds: [], letterId: link.letter_id })),
+            false,
+          )
           await transaction.delete(issues, issue.id)
           return { discarded: true }
         }
 
-        if (parsed.value.intent === 'publish' && parsed.value.response.length === 0) {
+        if (parsed.value.intent === 'publish' && richResponse.text.length === 0) {
           throw new EditorialConflict('Write Steve\'s reply before publishing.')
         }
-        if (issue.state === 'published' && parsed.value.response.length === 0) {
+        if (issue.state === 'published' && richResponse.text.length === 0) {
           throw new EditorialConflict('A published reply cannot be empty.')
         }
 
+        let attachmentSets: Array<{ attachmentIds: string[]; letterId: number }> = []
         for (let link of links) {
           let publicLetter = s.parseSafe(publicLetterSchema, {
             author: readText(form, `author-${link.id}`),
             body: readText(form, `body-${link.id}`),
+            bodyJson: readText(form, `bodyJson-${link.id}`),
+            fontKey: readText(form, `fontKey-${link.id}`) || 'handwritten',
           })
           if (!publicLetter.success) {
             throw new EditorialConflict('Each published letter needs a name and message.')
           }
+          let richLetter = readRichText(publicLetter.value.bodyJson, publicLetter.value.body)
+          if (richLetter instanceof Response) {
+            throw new EditorialConflict(await richLetter.text())
+          }
+          await assertAttachmentsBelongToLetter(transaction, link.letter_id, richLetter.attachmentIds)
           await transaction.update(issueLetters, link.id, {
             public_author: publicLetter.value.author,
-            public_body: publicLetter.value.body,
+            public_body: richLetter.text,
+            public_body_json: richLetter.json,
+            font_key: normalizeFontKey(publicLetter.value.fontKey),
           })
+          attachmentSets.push({ attachmentIds: richLetter.attachmentIds, letterId: link.letter_id })
         }
 
         let now = Date.now()
@@ -228,7 +285,8 @@ export default createController(routes.steve, {
             throw new EditorialConflict('This issue is already a draft.')
           }
           await transaction.update(issues, issue.id, {
-            response: parsed.value.response,
+            response: richResponse.text,
+            response_json: richResponse.json,
             state: 'draft',
             updated_at: now,
             published_at: null,
@@ -238,9 +296,11 @@ export default createController(routes.steve, {
             { state: 'draft' },
             { where: inList(letters.id, links.map((link) => link.letter_id)) },
           )
+          await syncPublicAttachments(transaction, attachmentSets, false)
         } else if (parsed.value.intent === 'publish') {
           await transaction.update(issues, issue.id, {
-            response: parsed.value.response,
+            response: richResponse.text,
+            response_json: richResponse.json,
             state: 'published',
             updated_at: now,
             published_at: issue.published_at ?? now,
@@ -250,11 +310,14 @@ export default createController(routes.steve, {
             { state: 'published' },
             { where: inList(letters.id, links.map((link) => link.letter_id)) },
           )
+          await syncPublicAttachments(transaction, attachmentSets, true)
         } else {
           await transaction.update(issues, issue.id, {
-            response: parsed.value.response,
+            response: richResponse.text,
+            response_json: richResponse.json,
             updated_at: now,
           })
+          await syncPublicAttachments(transaction, attachmentSets, issue.state === 'published')
         }
 
         return { discarded: false }
@@ -276,7 +339,7 @@ export default createController(routes.steve, {
       let letterId = readId(context.params.letterId)
       if (letterId === null) return new Response('Letter not found.', { status: 404 })
 
-      let form = context.get(FormData)
+      let form = await context.request.formData()
       let parsed = s.parseSafe(updateLetterSchema, { intent: readText(form, 'intent') })
       if (!parsed.success) return new Response('Unknown letter action.', { status: 400 })
 
@@ -344,4 +407,63 @@ function readId(value: string | undefined): number | null {
 function readText(form: FormData, name: string): string {
   let value = form.get(name)
   return typeof value === 'string' ? value : ''
+}
+
+function readRichText(
+  json: string,
+  fallback: string,
+  options: { allowEmpty?: boolean; allowImages?: boolean } = {},
+): NormalizedRichText | Response {
+  try {
+    return normalizeRichText({ json, fallback, ...options })
+  } catch (error) {
+    if (error instanceof RichTextValidationError) {
+      return new Response(error.message, { status: 400 })
+    }
+    throw error
+  }
+}
+
+function readStoredAttachmentIds(json: string | null, fallback: string): string[] {
+  try {
+    return normalizeRichText({ json, fallback }).attachmentIds
+  } catch {
+    return []
+  }
+}
+
+async function assertAttachmentsBelongToLetter(
+  database: SqliteDatabase,
+  letterId: number,
+  attachmentIds: string[],
+) {
+  if (attachmentIds.length === 0) return
+  let owned = await database.findMany(attachments, {
+    where: inList(attachments.id, attachmentIds),
+  })
+  if (
+    owned.length !== attachmentIds.length ||
+    owned.some((attachment) => attachment.letter_id !== letterId)
+  ) {
+    throw new EditorialConflict('A published letter contains an image it does not own.')
+  }
+}
+
+async function syncPublicAttachments(
+  database: SqliteDatabase,
+  letterDocuments: Array<{ attachmentIds: string[]; letterId: number }>,
+  makePublic: boolean,
+) {
+  for (let letterDocument of letterDocuments) {
+    let owned = await database.findMany(attachments, {
+      where: { letter_id: letterDocument.letterId },
+    })
+    let publicIds = makePublic ? new Set(letterDocument.attachmentIds) : new Set<string>()
+    for (let attachment of owned) {
+      let isPublic = publicIds.has(attachment.id)
+      if (attachment.is_public !== isPublic) {
+        await database.update(attachments, attachment.id, { is_public: isPublic })
+      }
+    }
+  }
 }

@@ -1,21 +1,30 @@
 import { createRouter, type MiddlewareContext } from 'remix/router'
-import { formData } from 'remix/middleware/form-data'
 import { render } from 'remix/middleware/render'
 import { staticFiles } from 'remix/middleware/static'
 
 import controller from './actions/controller.tsx'
 import steveController from './actions/steve/controller.tsx'
+import uploadsController from './actions/uploads/controller.ts'
 import { assets } from './assets.ts'
+import { AttachmentStore } from './data/attachment-store.ts'
 import { createLettersDatabase } from './data/database.ts'
+import { loadAttachmentStore } from './middleware/attachments.ts'
 import { loadDatabase } from './middleware/database.ts'
 import { routes } from './routes.ts'
 
 const renderMiddleware = render({ assets })
 
-export async function createAppRouter(options: { databasePath?: string } = {}) {
+export async function createAppRouter(
+  options: { databasePath?: string; uploadDirectory?: string } = {},
+) {
   let database = await createLettersDatabase(options.databasePath)
+  let attachmentStore = new AttachmentStore(
+    database,
+    options.uploadDirectory ?? process.env.UPLOAD_DIRECTORY ?? './tmp/uploads',
+  )
+  await attachmentStore.initialize()
   let databaseMiddleware = loadDatabase(database)
-  let formDataMiddleware = formData()
+  let attachmentStoreMiddleware = loadAttachmentStore(attachmentStore)
   let staticMiddleware = staticFiles('./public', {
     cacheControl:
       process.env.NODE_ENV === 'production'
@@ -26,8 +35,8 @@ export async function createAppRouter(options: { databasePath?: string } = {}) {
 
   let middleware = [
     staticMiddleware,
-    formDataMiddleware,
     databaseMiddleware,
+    attachmentStoreMiddleware,
     renderMiddleware,
   ] as const
 
@@ -35,16 +44,17 @@ export async function createAppRouter(options: { databasePath?: string } = {}) {
 
   let appRouter = createRouter<AppContext>({ middleware })
   appRouter.map(routes, controller)
+  appRouter.map(routes.uploads, uploadsController)
   appRouter.map(routes.steve, steveController)
 
-  return { database, router: appRouter }
+  return { attachmentStore, database, router: appRouter }
 }
 
 type AppContext = MiddlewareContext<
   [
     ReturnType<typeof staticFiles>,
-    ReturnType<typeof formData>,
     ReturnType<typeof loadDatabase>,
+    ReturnType<typeof loadAttachmentStore>,
     typeof renderMiddleware,
   ]
 >

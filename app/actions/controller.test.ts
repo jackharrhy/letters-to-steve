@@ -1,5 +1,11 @@
+import { randomUUID } from 'node:crypto'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+
 import * as assert from 'remix/assert'
 import { describe, it } from 'remix/test'
+import sharp from 'sharp'
 
 import { createAppRouter } from '../router.ts'
 import { routes } from '../routes.ts'
@@ -181,6 +187,167 @@ describe('editorial letter routes', () => {
       else process.env.STEVE_ADMIN_PASSWORD = previousPassword
     }
   })
+
+  it('processes, owns, and publishes images inside rich letters', async () => {
+    let previousPassword = process.env.STEVE_ADMIN_PASSWORD
+    process.env.STEVE_ADMIN_PASSWORD = 'test-secret'
+    let uploadDirectory = await mkdtemp(path.join(tmpdir(), 'letters-to-steve-'))
+    let { database, router } = await createAppRouter({
+      databasePath: ':memory:',
+      uploadDirectory,
+    })
+
+    try {
+      let draftToken = randomUUID()
+      let sourceImage = await sharp({
+        create: {
+          background: { alpha: 1, b: 196, g: 214, r: 231 },
+          channels: 4,
+          height: 1600,
+          width: 3200,
+        },
+      })
+        .png()
+        .toBuffer()
+
+      let uploadForm = new FormData()
+      uploadForm.set('image', new File([sourceImage], 'sky.png', { type: 'image/png' }))
+      let uploadResponse = await router.fetch(
+        request(routes.uploads.create.href(), {
+          body: uploadForm,
+          headers: {
+            Origin: 'http://letters.test',
+            'X-Draft-Token': draftToken,
+          },
+          method: 'POST',
+        }),
+      )
+      assert.equal(uploadResponse.status, 201)
+      let upload = (await uploadResponse.json()) as {
+        height: number
+        id: string
+        mimeType: string
+        src: string
+        width: number
+      }
+      assert.equal(upload.mimeType, 'image/webp')
+      assert.equal(upload.width, 2400)
+      assert.equal(upload.height, 1200)
+
+      let privateImage = await router.fetch(request(upload.src))
+      assert.equal(privateImage.status, 200)
+      assert.equal(privateImage.headers.get('Content-Type'), 'image/webp')
+      assert.match(privateImage.headers.get('Cache-Control') ?? '', /private/)
+
+      let richLetter = JSON.stringify({
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: 'A rich ', marks: [{ type: 'italic' }] },
+              { type: 'text', text: 'letter', marks: [{ type: 'bold' }] },
+              { type: 'text', text: ' for Steve.' },
+            ],
+          },
+          {
+            type: 'image',
+            attrs: {
+              alt: 'A pale blue field',
+              height: upload.height,
+              src: upload.src,
+              width: upload.width,
+            },
+          },
+        ],
+      })
+      let createResponse = await submitLetter(router, {
+        author: 'Ari',
+        body: 'A rich letter for Steve.',
+        bodyJson: richLetter,
+        canPublish: true,
+        draftToken,
+        email: '',
+        fontKey: 'handwritten',
+      })
+      assert.equal(createResponse.status, 303)
+
+      let inboxHtml = await (
+        await router.fetch(request(routes.steve.index.href(), { headers: steveHeaders() }))
+      ).text()
+      assert.match(inboxHtml, /font-handwritten/)
+      assert.match(inboxHtml, /A pale blue field/)
+      assert.match(inboxHtml, /<strong[^>]*>letter<\/strong>/)
+
+      let richReply = JSON.stringify({
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: 'A proper ' },
+              { type: 'text', text: 'reply.', marks: [{ type: 'italic' }] },
+            ],
+          },
+        ],
+      })
+      let publishResponse = await postForm(router, routes.steve.createIssue.href(), {
+        intent: 'publish',
+        letterId: ['1'],
+        response: 'A proper reply.',
+        responseJson: richReply,
+      })
+      assert.equal(publishResponse.status, 303)
+
+      let publishedHtml = await (await router.fetch(request(routes.home.href()))).text()
+      assert.match(publishedHtml, /A pale blue field/)
+      assert.match(publishedHtml, /<em[^>]*>reply\.<\/em>/)
+      assert.match(publishedHtml, /steve-prose/)
+
+      let publicImage = await router.fetch(request(upload.src))
+      assert.match(publicImage.headers.get('Cache-Control') ?? '', /public/)
+
+      let unsafeDocument = JSON.stringify({
+        type: 'doc',
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: 'No.' }] },
+          { type: 'image', attrs: { src: 'https://example.com/tracker.png' } },
+        ],
+      })
+      let unsafeResponse = await submitLetter(router, {
+        author: 'Eve',
+        body: 'No.',
+        bodyJson: unsafeDocument,
+        canPublish: false,
+        email: '',
+      })
+      assert.equal(unsafeResponse.status, 400)
+
+      let oversized = new FormData()
+      oversized.set(
+        'image',
+        new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'large.png', {
+          type: 'image/png',
+        }),
+      )
+      let oversizedResponse = await router.fetch(
+        request(routes.uploads.create.href(), {
+          body: oversized,
+          headers: {
+            Origin: 'http://letters.test',
+            'X-Draft-Token': randomUUID(),
+          },
+          method: 'POST',
+        }),
+      )
+      assert.equal(oversizedResponse.status, 413)
+    } finally {
+      await database.close()
+      await rm(uploadDirectory, { force: true, recursive: true })
+      if (previousPassword === undefined) delete process.env.STEVE_ADMIN_PASSWORD
+      else process.env.STEVE_ADMIN_PASSWORD = previousPassword
+    }
+  })
 })
 
 async function submitLetter(
@@ -188,8 +355,11 @@ async function submitLetter(
   values: {
     author: string
     body: string
+    bodyJson?: string
     canPublish: boolean
+    draftToken?: string
     email: string
+    fontKey?: 'handwritten' | 'book' | 'plain'
   },
 ): Promise<Response> {
   return postForm(
@@ -198,9 +368,12 @@ async function submitLetter(
     {
       author: values.author,
       body: values.body,
+      bodyJson: values.bodyJson ?? '',
       canPublish: values.canPublish ? 'yes' : undefined,
       company: '',
+      draftToken: values.draftToken ?? 'e9b1d519-8d62-4e3a-aa61-99b8f5942302',
       email: values.email,
+      fontKey: values.fontKey ?? 'handwritten',
     },
     false,
   )

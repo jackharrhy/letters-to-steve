@@ -5,6 +5,9 @@ A small correspondence site built on the Remix 3 preview. Every letter goes to S
 ## What is here
 
 - A dedicated, distraction-free writing page
+- A progressively enhanced Tiptap editor with restrained prose formatting
+- Handwritten, book, and plain letter styles using self-hosted fonts
+- Sharp-processed JPEG, PNG, and WebP attachments stored on local disk
 - Explicit permission to publish a letter and its author's name
 - An editorial inbox where nothing is public by default
 - A protected `/steve` inbox using browser-native Basic authentication
@@ -16,7 +19,8 @@ A small correspondence site built on the Remix 3 preview. Every letter goes to S
 - Boundary validation, a honeypot field, and same-origin checks on admin writes
 - A simple light theme and responsive layout
 
-The complete public flow works without client JavaScript.
+The complete text-only public flow works without client JavaScript. Rich formatting and image
+uploads enhance the same form when the browser runtime is available.
 
 ## Requirements
 
@@ -53,7 +57,12 @@ The runtime applies pending migrations during startup. The manual database comma
 
 ## Data and configuration
 
-The default database is `db/letters.sqlite`. Override it with `DATABASE_PATH`. SQLite files and sidecar files are ignored by Git; migration files under `db/migrations` are committed.
+The default database is `db/letters.sqlite`. Override it with `DATABASE_PATH`. Processed images are
+stored in `tmp/uploads`; override that directory with `UPLOAD_DIRECTORY`. Both locations are ignored
+by Git, while migration files under `db/migrations` are committed.
+
+Incoming images are limited to 10 MiB each and converted to WebP at a maximum dimension of 2400 px.
+The complete upload directory is capped at 500 MiB. Unclaimed draft uploads expire after 24 hours.
 
 The current single-node SQLite setup is a good fit for a personal site. If the app grows into multiple server instances, move the same table contract to a shared PostgreSQL database before scaling horizontally.
 
@@ -63,6 +72,8 @@ The current single-node SQLite setup is a good fit for a personal site. If the a
 - `GET /write` renders the letter composer
 - `GET /letters/:issueId` renders one published issue
 - `POST /letters` validates and stores a letter
+- `POST /uploads` validates and prepares one draft image
+- `GET /uploads/:attachmentId` streams one processed image
 - `GET /steve` renders the protected inbox
 - `POST /steve/issues` drafts or publishes a grouped issue
 - `POST /steve/issues/:issueId` saves, publishes, unpublishes, or discards an issue

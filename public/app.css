@@ -1,3 +1,35 @@
+@font-face {
+  font-family: "Shantell Sans Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url("/assets/npm/@fontsource-variable/shantell-sans/files/shantell-sans-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Shantell Sans Variable";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url("/assets/npm/@fontsource-variable/shantell-sans/files/shantell-sans-latin-wght-italic.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Literata Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/assets/npm/@fontsource-variable/literata/files/literata-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Literata Variable";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/assets/npm/@fontsource-variable/literata/files/literata-latin-wght-italic.woff2") format("woff2-variations");
+}
+
 :root {
   color-scheme: light;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -11,6 +43,8 @@
   --accent-dark: #184b9d;
   --danger: #a22931;
   --success: #27643e;
+  --handwritten: "Shantell Sans Variable", "Comic Sans MS", cursive;
+  --book: "Literata Variable", Georgia, serif;
 }
 
 * {
@@ -29,7 +63,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -135,7 +170,8 @@ legend {
 
 input[type="text"],
 input[type="email"],
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid #aeada7;
   border-radius: 5px;
@@ -158,7 +194,8 @@ textarea {
 
 input[type="text"]:focus,
 input[type="email"]:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--accent);
   outline: 3px solid #d9e5f8;
   outline-offset: 0;
@@ -254,6 +291,11 @@ button:active,
 .form-success,
 .field-error {
   font-size: 13px;
+}
+
+.field-help {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .form-success {
@@ -422,6 +464,286 @@ button:active,
 
 .letter-textarea {
   min-height: clamp(320px, 55dvh, 640px);
+}
+
+.rich-editor {
+  width: 100%;
+}
+
+.rich-editor[data-font="handwritten"] .editor-writing-surface,
+.font-handwritten {
+  font-family: var(--handwritten);
+}
+
+.rich-editor[data-font="book"] .editor-writing-surface,
+.font-book {
+  font-family: var(--book);
+}
+
+.rich-editor[data-font="plain"] .editor-writing-surface,
+.font-plain {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.editor-toolbar,
+.tiptap-mount,
+.editor-lower-row,
+.editor-status {
+  display: none;
+}
+
+.rich-editor.is-enhanced .editor-toolbar,
+.rich-editor.is-enhanced .editor-lower-row,
+.rich-editor.is-enhanced .editor-status {
+  display: flex;
+}
+
+.rich-editor.is-enhanced .tiptap-mount {
+  display: block;
+}
+
+.rich-editor.is-enhanced .editor-fallback {
+  display: none;
+}
+
+.editor-toolbar {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 5px 6px;
+  border: 1px solid #aeada7;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: #f4f4f1;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.editor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.editor-tools button,
+.editor-tools button:hover {
+  min-height: 30px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #494945;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editor-tools button:hover {
+  border-color: #c8c8c2;
+  background: #e9e9e4;
+  color: var(--ink);
+}
+
+.editor-tools button[aria-pressed="true"] {
+  border-color: #b9c9e3;
+  background: #dfe8f6;
+  color: var(--accent-dark);
+}
+
+.editor-tools button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.editor-writing-surface {
+  border-radius: 5px;
+}
+
+.is-enhanced .editor-writing-surface {
+  border: 1px solid #aeada7;
+  border-radius: 0 0 5px 5px;
+  background: var(--surface);
+}
+
+.rich-editor:focus-within .editor-toolbar,
+.rich-editor:focus-within .editor-writing-surface {
+  border-color: var(--accent);
+}
+
+.rich-editor:focus-within .editor-writing-surface {
+  box-shadow: 0 0 0 3px #d9e5f8;
+}
+
+.rich-editor:focus-within .editor-toolbar {
+  box-shadow: 0 -3px 0 0 #d9e5f8, 3px 0 0 0 #d9e5f8, -3px 0 0 0 #d9e5f8;
+}
+
+.tiptap {
+  min-height: clamp(320px, 55dvh, 640px);
+  padding: 24px 26px 48px;
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.72;
+  outline: 0;
+  overflow-wrap: anywhere;
+}
+
+.tiptap p,
+.rich-prose p {
+  margin: 0 0 1em;
+}
+
+.tiptap p:last-child,
+.rich-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.tiptap blockquote,
+.rich-prose blockquote {
+  margin: 1.4em 0;
+  padding-left: 1em;
+  border-left: 2px solid #aaa9a4;
+  color: #4e4e4a;
+}
+
+.tiptap ul,
+.rich-prose ul {
+  margin: 1em 0;
+  padding-left: 1.4em;
+}
+
+.tiptap a,
+.rich-prose a {
+  color: var(--accent-dark);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.tiptap figure,
+.rich-prose figure {
+  margin: 1.6em 0;
+}
+
+.tiptap img,
+.rich-prose img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.tiptap img.ProseMirror-selectednode {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  height: 0;
+  float: left;
+  color: var(--muted);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.editor-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.editor-lower-row {
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 36px;
+  padding-top: 7px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.font-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.font-picker select {
+  width: auto;
+  min-height: 30px;
+  padding: 3px 24px 3px 7px;
+  border-color: #c0c0ba;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.editor-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-count.is-over-limit,
+.editor-status.is-error {
+  color: var(--danger);
+}
+
+.editor-status {
+  min-height: 19px;
+  margin: 2px 0 0;
+  align-items: center;
+  color: var(--success);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+}
+
+.editor-status:empty {
+  min-height: 0;
+}
+
+.rich-editor.is-uploading .editor-writing-surface {
+  cursor: progress;
+}
+
+.rich-prose {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.issue-question > .rich-prose {
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.issue-response .steve-prose {
+  font-size: 17px;
+  line-height: 1.72;
+}
+
+.inbox-body.rich-prose {
+  margin: 18px 0;
+}
+
+.new-issue .tiptap,
+.issue-editor .tiptap {
+  min-height: 160px;
+  padding: 14px 16px 24px;
+  font-size: 16px;
+  line-height: 1.62;
+}
+
+.issue-editor-letters .tiptap {
+  min-height: 120px;
+}
+
+.original-letter .rich-prose {
+  margin-top: 10px;
 }
 
 .admin-shell {
@@ -619,6 +941,20 @@ code {
 
   .new-issue {
     padding: 18px;
+  }
+
+  .editor-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editor-history {
+    display: none;
+  }
+
+  .tiptap {
+    padding: 20px 18px 40px;
+    font-size: 18px;
   }
 }
 

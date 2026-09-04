@@ -1,12 +1,16 @@
 import type { Handle } from 'remix/ui'
 
+import type { FontKey } from '../data/schema.ts'
 import { routes } from '../routes.ts'
+import { RichText } from '../ui/rich-text.tsx'
 import { CardComposer } from './card-composer.tsx'
 import { Document } from './document.tsx'
 
 export interface PublicIssueLetter {
   author: string
   body: string
+  bodyJson: string | null
+  fontKey: FontKey
 }
 
 export interface PublicIssue {
@@ -14,13 +18,16 @@ export interface PublicIssue {
   letters: PublicIssueLetter[]
   publishedAt: number
   response: string
+  responseJson: string | null
 }
 
 export interface LetterFormValues {
   author: string
   body: string
+  bodyJson: string
   canPublish: boolean
   email: string
+  fontKey: FontKey
 }
 
 export type FormErrors = Record<string, string | undefined>
@@ -30,6 +37,7 @@ interface HomePageProps {
 }
 
 interface WritePageProps {
+  draftToken: string
   errors?: FormErrors
   sent?: boolean
   values?: LetterFormValues
@@ -38,8 +46,10 @@ interface WritePageProps {
 const defaultValues: LetterFormValues = {
   author: '',
   body: '',
+  bodyJson: '',
   canPublish: false,
   email: '',
+  fontKey: 'handwritten',
 }
 
 export function HomePage(handle: Handle<HomePageProps>) {
@@ -73,7 +83,7 @@ export function HomePage(handle: Handle<HomePageProps>) {
 
 export function WritePage(handle: Handle<WritePageProps>) {
   return () => {
-    let { errors = {}, sent = false, values = defaultValues } = handle.props
+    let { draftToken, errors = {}, sent = false, values = defaultValues } = handle.props
 
     return (
       <Document title="Write to Steve | Letters to Steve">
@@ -82,7 +92,12 @@ export function WritePage(handle: Handle<WritePageProps>) {
             <a href={routes.home.href()}>letters to steve</a>
           </header>
           <main className="write-main">
-            <CardComposer errors={errors} sent={sent} values={values} />
+            <CardComposer
+              draftToken={draftToken}
+              errors={errors}
+              sent={sent}
+              values={values}
+            />
           </main>
         </div>
       </Document>
@@ -160,14 +175,23 @@ export function IssueArticle(handle: Handle<{ issue: PublicIssue }>) {
         <div className="issue-questions">
           {issue.letters.map((letter, index) => (
             <blockquote className="issue-question" key={index}>
-              <p>{letter.body}</p>
+              <RichText
+                fallback={letter.body}
+                fontKey={letter.fontKey}
+                json={letter.bodyJson}
+              />
               <footer>{letter.author}</footer>
             </blockquote>
           ))}
         </div>
 
         <div className="issue-response">
-          <p>{issue.response}</p>
+          <RichText
+            className="steve-prose"
+            fallback={issue.response}
+            fontKey="book"
+            json={issue.responseJson}
+          />
           <strong>Steve</strong>
         </div>
       </article>

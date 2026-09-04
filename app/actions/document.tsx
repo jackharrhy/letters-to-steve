@@ -1,5 +1,7 @@
 import type { Handle, RemixNode } from 'remix/ui'
 
+import { browserEntryHref } from '../assets.ts'
+
 export interface DocumentProps {
   children?: RemixNode
   description?: string
@@ -25,11 +27,14 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta name="description" content={description} />
           <meta name="theme-color" content="#f7f7f5" />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-          <link rel="stylesheet" href="/app.css?v=6" />
+          <link rel="stylesheet" href="/app.css?v=7" />
           <title>{title}</title>
           {head}
         </head>
-        <body>{children}</body>
+        <body>
+          {children}
+          <script type="module" src={browserEntryHref} />
+        </body>
       </html>
     )
   }
