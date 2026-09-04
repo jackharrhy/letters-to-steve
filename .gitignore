@@ -1,4 +1,6 @@
-.venv
-.ruff_cache
-__pycache__
-*.db
+node_modules/
+db/*.sqlite
+db/*.sqlite-*
+tmp/
+.DS_Store
+.env
