@@ -107,6 +107,7 @@ export const RichLetterEditor = clientEntry(
               autoFocus={props.autoFocus}
               aria-invalid={props.invalid}
               aria-describedby={props.describedBy}
+              placeholder="Write your letter here..."
               defaultValue={props.body}
             />
             <div className="tiptap-mount" />

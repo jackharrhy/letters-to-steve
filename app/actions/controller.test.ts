@@ -30,6 +30,8 @@ describe('editorial letter routes', () => {
       assert.equal(writeResponse.status, 200)
       assert.match(writeHtml, /<h1[^>]*>dear steve,/)
       assert.match(writeHtml, /class="letter-textarea"/)
+      assert.match(writeHtml, /placeholder="Write your letter here\.\.\."/)
+      assert.match(writeHtml, /rel="preload"[^>]+shantell-sans-latin-wght-normal\.woff2/)
 
       let invalidResponse = await submitLetter(router, {
         author: '',

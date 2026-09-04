@@ -86,7 +86,18 @@ export function WritePage(handle: Handle<WritePageProps>) {
     let { draftToken, errors = {}, sent = false, values = defaultValues } = handle.props
 
     return (
-      <Document title="Write to Steve | Letters to Steve">
+      <Document
+        title="Write to Steve | Letters to Steve"
+        head={
+          <link
+            rel="preload"
+            href="/assets/npm/@fontsource-variable/shantell-sans/files/shantell-sans-latin-wght-normal.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        }
+      >
         <div className="write-shell">
           <header className="write-header">
             <a href={routes.home.href()}>letters to steve</a>

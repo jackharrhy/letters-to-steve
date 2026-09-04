@@ -27,7 +27,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta name="description" content={description} />
           <meta name="theme-color" content="#f7f7f5" />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-          <link rel="stylesheet" href="/app.css?v=7" />
+          <link rel="stylesheet" href="/app.css?v=8" />
           <title>{title}</title>
           {head}
         </head>

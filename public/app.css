@@ -462,10 +462,6 @@ button:active,
   font-size: 28px;
 }
 
-.letter-textarea {
-  min-height: clamp(320px, 55dvh, 640px);
-}
-
 .rich-editor {
   width: 100%;
 }
@@ -492,10 +488,67 @@ button:active,
   display: none;
 }
 
+.editor-writing-surface {
+  border: 1px solid #aeada7;
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.rich-editor .editor-fallback,
+.tiptap {
+  min-height: clamp(320px, 55dvh, 640px);
+  padding: 24px 26px 48px;
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.72;
+  overflow-wrap: anywhere;
+}
+
+.rich-editor .editor-fallback {
+  display: block;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: 0;
+}
+
+.rich-editor .editor-fallback:focus {
+  border-color: transparent;
+  outline: 0;
+}
+
+.rich-editor .editor-fallback::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+@media (scripting: enabled) {
+  .editor-toolbar,
+  .editor-lower-row,
+  .editor-status {
+    display: flex;
+  }
+
+  .editor-toolbar .editor-tools,
+  .editor-lower-row,
+  .editor-status {
+    visibility: hidden;
+  }
+
+  .editor-writing-surface {
+    border-radius: 0 0 5px 5px;
+  }
+}
+
 .rich-editor.is-enhanced .editor-toolbar,
 .rich-editor.is-enhanced .editor-lower-row,
 .rich-editor.is-enhanced .editor-status {
   display: flex;
+  visibility: visible;
+}
+
+.rich-editor.is-enhanced .editor-toolbar .editor-tools {
+  visibility: visible;
 }
 
 .rich-editor.is-enhanced .tiptap-mount {
@@ -555,16 +608,6 @@ button:active,
   cursor: default;
 }
 
-.editor-writing-surface {
-  border-radius: 5px;
-}
-
-.is-enhanced .editor-writing-surface {
-  border: 1px solid #aeada7;
-  border-radius: 0 0 5px 5px;
-  background: var(--surface);
-}
-
 .rich-editor:focus-within .editor-toolbar,
 .rich-editor:focus-within .editor-writing-surface {
   border-color: var(--accent);
@@ -579,13 +622,7 @@ button:active,
 }
 
 .tiptap {
-  min-height: clamp(320px, 55dvh, 640px);
-  padding: 24px 26px 48px;
-  color: var(--ink);
-  font-size: 19px;
-  line-height: 1.72;
   outline: 0;
-  overflow-wrap: anywhere;
 }
 
 .tiptap p,
@@ -731,14 +768,17 @@ button:active,
 }
 
 .new-issue .tiptap,
-.issue-editor .tiptap {
+.new-issue .editor-fallback,
+.issue-editor .tiptap,
+.issue-editor .editor-fallback {
   min-height: 160px;
   padding: 14px 16px 24px;
   font-size: 16px;
   line-height: 1.62;
 }
 
-.issue-editor-letters .tiptap {
+.issue-editor-letters .tiptap,
+.issue-editor-letters .editor-fallback {
   min-height: 120px;
 }
 
@@ -862,10 +902,6 @@ code {
   color: var(--muted);
 }
 
-.issue-editor textarea {
-  min-height: 106px;
-}
-
 .original-letter {
   color: var(--muted);
   font-size: 13px;
@@ -952,6 +988,7 @@ code {
     display: none;
   }
 
+  .rich-editor .editor-fallback,
   .tiptap {
     padding: 20px 18px 40px;
     font-size: 18px;
