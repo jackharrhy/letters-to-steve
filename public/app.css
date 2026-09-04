@@ -23,7 +23,7 @@ body {
   background: var(--page);
   color: var(--ink);
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -65,6 +65,7 @@ a {
 .composer h2,
 .letters h2,
 .admin-header h1,
+.admin-section h2,
 .setup h2 {
   font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
 }
@@ -73,6 +74,11 @@ a {
   margin: 0 0 16px;
   font-size: 28px;
   letter-spacing: -0.04em;
+}
+
+.steve-header h1 a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .steve-header img {
@@ -89,7 +95,8 @@ a {
 }
 
 .composer h2,
-.letters h2 {
+.letters h2,
+.admin-section h2 {
   margin: 0 0 20px;
   font-size: 21px;
   letter-spacing: -0.02em;
@@ -97,16 +104,18 @@ a {
 
 .composer form,
 .field,
-.inbox-actions form {
+.new-issue,
+.issue-editor form {
   display: grid;
 }
 
-.composer form {
+.composer form,
+.new-issue,
+.issue-editor form {
   gap: 18px;
 }
 
-.field,
-.inbox-actions form {
+.field {
   gap: 6px;
 }
 
@@ -157,34 +166,18 @@ textarea:focus {
   border-color: var(--danger) !important;
 }
 
-fieldset {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-legend {
-  margin-bottom: 6px;
-}
-
-.radio-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 22px;
-}
-
-.radio-row label {
+.permission,
+.select-letter {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-weight: 450;
   cursor: pointer;
 }
 
-.radio-row input {
-  width: 16px;
-  height: 16px;
+input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
   margin: 0;
   accent-color: var(--accent);
 }
@@ -208,6 +201,42 @@ button:hover {
 
 button:active {
   transform: translateY(1px);
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--accent-dark);
+}
+
+.text-button {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.text-button:hover {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.danger-button,
+.danger-button:hover {
+  color: var(--danger);
+}
+
+.button-row,
+.letter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
 }
 
 .form-success,
@@ -243,58 +272,84 @@ button:active {
   color: var(--muted);
 }
 
-.letter-list,
-.inbox-list {
+.issue-list,
+.inbox-list,
+.editorial-list {
   display: grid;
 }
 
-.letter {
-  padding: 24px 0;
+.issue {
+  padding: 38px 0 42px;
   border-top: 1px solid var(--line);
 }
 
-.letter:first-child {
-  border-top: 0;
+.issue:first-child {
   padding-top: 0;
+  border-top: 0;
 }
 
-.letter-body,
-.inbox-body,
-.steve-reply p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.letter-body {
-  margin: 0;
-}
-
-.letter-meta {
-  margin-top: 14px;
+.issue-meta {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
+  margin-bottom: 26px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.letter-meta strong {
-  color: var(--ink);
+.issue-meta a {
+  font-weight: 700;
 }
 
-.steve-reply {
-  margin-top: 18px;
-  padding-left: 14px;
+.issue-questions {
+  display: grid;
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.issue-question {
+  margin: 0;
+  padding-left: 18px;
+  border-left: 1px solid #aaa9a4;
+}
+
+.issue-question p,
+.issue-response p,
+.inbox-body,
+.original-letter p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.issue-question footer {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.issue-response {
+  padding-left: 18px;
   border-left: 3px solid var(--accent);
 }
 
-.steve-reply strong,
-.steve-reply p {
-  margin: 0;
+.issue-response strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
 }
 
-.steve-reply p {
-  margin-top: 3px;
+.issue-page .steve-header {
+  margin-bottom: 26px;
+}
+
+.issue-page .issue {
+  padding-top: 26px;
+}
+
+.back-link {
+  margin: 0;
+  font-size: 13px;
 }
 
 .admin-shell {
@@ -308,7 +363,8 @@ button:active {
   border-bottom: 1px solid var(--line);
 }
 
-.admin-header a {
+.admin-header a,
+.letter-controls a {
   font-size: 13px;
 }
 
@@ -335,17 +391,28 @@ code {
   font-size: 0.9em;
 }
 
-.inbox-letter {
-  padding: 28px 0;
+.admin-section {
+  margin-top: 48px;
+}
+
+.admin-section:first-child {
+  margin-top: 0;
+}
+
+.inbox-letter,
+.issue-editor {
+  padding: 26px 0;
   border-top: 1px solid var(--line);
 }
 
-.inbox-letter:first-child {
+.inbox-letter:first-child,
+.issue-editor:first-child {
   padding-top: 0;
   border-top: 0;
 }
 
-.inbox-letter > header {
+.inbox-letter > header,
+.issue-editor > header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -358,29 +425,86 @@ code {
 }
 
 .inbox-letter time,
-.inbox-letter > header span {
+.inbox-letter > header span,
+.issue-editor > header span {
   color: var(--muted);
 }
 
 .inbox-body {
-  margin: 20px 0;
+  margin: 18px 0;
 }
 
-.inbox-actions {
+.letter-controls form {
+  display: contents;
+}
+
+.new-issue {
+  margin-top: 32px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.issue-editor > header {
+  margin-bottom: 20px;
+}
+
+.issue-editor-letters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
-  align-items: end;
+  gap: 18px;
 }
 
-.inbox-actions textarea {
-  min-height: 92px;
+.issue-editor fieldset {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
 }
 
-.inbox-actions a {
-  padding-bottom: 10px;
+.issue-editor legend {
+  padding: 0 5px;
+  color: var(--muted);
+}
+
+.issue-editor textarea {
+  min-height: 106px;
+}
+
+.original-letter {
+  color: var(--muted);
   font-size: 13px;
-  font-weight: 650;
+}
+
+.original-letter p {
+  margin-top: 10px;
+}
+
+.original-letter strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.archive {
+  margin-top: 52px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.archive > summary {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.archive .inbox-list {
+  margin-top: 22px;
+}
+
+.compact-letter > header {
+  align-items: start;
 }
 
 @media (max-width: 560px) {
@@ -401,15 +525,19 @@ code {
     height: 235px;
   }
 
-  .field-row,
-  .inbox-actions {
+  .field-row {
     grid-template-columns: 1fr;
   }
 
+  .issue-meta,
   .inbox-letter > header {
     align-items: start;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .new-issue {
+    padding: 18px;
   }
 }
 

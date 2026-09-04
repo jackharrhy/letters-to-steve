@@ -30,8 +30,6 @@ export function CardComposer(handle: Handle<CardComposerProps>) {
         ) : null}
 
         <form action={routes.createLetter.href()} method="post">
-          <input type="hidden" name="design" value="airmail" />
-
           <div className="field">
             <label htmlFor="letter-body">letter</label>
             <textarea
@@ -91,30 +89,15 @@ export function CardComposer(handle: Handle<CardComposerProps>) {
             </div>
           </div>
 
-          <fieldset>
-            <legend>visibility</legend>
-            <div className="radio-row">
-              <label>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  defaultChecked={values.visibility === 'public'}
-                />
-                public
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  defaultChecked={values.visibility === 'private'}
-                />
-                private
-              </label>
-            </div>
-            {errors.visibility ? <span className="field-error">{errors.visibility}</span> : null}
-          </fieldset>
+          <label className="permission">
+            <input
+              type="checkbox"
+              name="canPublish"
+              value="yes"
+              defaultChecked={values.canPublish}
+            />
+            Steve may publish this letter and my name.
+          </label>
 
           <div className="honeypot" aria-hidden="true">
             <label htmlFor="company">company</label>

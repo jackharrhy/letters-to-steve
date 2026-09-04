@@ -1,58 +1,56 @@
 import type { Handle } from 'remix/ui'
 
-import type { LetterDesign, LetterVisibility } from '../data/schema.ts'
+import { routes } from '../routes.ts'
 import { CardComposer } from './card-composer.tsx'
 import { Document } from './document.tsx'
 
-export interface PublicLetter {
-  id: number
+export interface PublicIssueLetter {
   author: string
   body: string
-  publicReply: string | null
-  createdAt: number
+}
+
+export interface PublicIssue {
+  id: number
+  letters: PublicIssueLetter[]
+  publishedAt: number
+  response: string
 }
 
 export interface LetterFormValues {
-  [key: string]: string
   author: string
-  email: string
   body: string
-  design: LetterDesign
-  visibility: LetterVisibility
+  canPublish: boolean
+  email: string
 }
 
 export type FormErrors = Record<string, string | undefined>
 
 interface HomePageProps {
   errors?: FormErrors
-  publicLetters: PublicLetter[]
+  issues: PublicIssue[]
   sent?: boolean
   values?: LetterFormValues
 }
 
 const defaultValues: LetterFormValues = {
   author: '',
-  email: '',
   body: '',
-  design: 'airmail',
-  visibility: 'public',
+  canPublish: false,
+  email: '',
 }
 
 export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
-    let { errors = {}, publicLetters, sent = false, values = defaultValues } = handle.props
+    let { errors = {}, issues, sent = false, values = defaultValues } = handle.props
 
     return (
       <Document>
         <div className="site-shell">
-          <header className="steve-header">
-            <h1>letters to steve</h1>
-            <img src="/steve.png" width="264" height="741" alt="Steve" />
-          </header>
+          <SteveHeader />
 
           <main>
             <CardComposer errors={errors} sent={sent} values={values} />
-            <LetterList letters={publicLetters} />
+            <IssueList issues={issues} />
           </main>
         </div>
       </Document>
@@ -60,34 +58,51 @@ export function HomePage(handle: Handle<HomePageProps>) {
   }
 }
 
-function LetterList(handle: Handle<{ letters: PublicLetter[] }>) {
+export function IssuePage(handle: Handle<{ issue: PublicIssue }>) {
   return () => {
-    let { letters } = handle.props
+    let { issue } = handle.props
+
+    return (
+      <Document title={`Letter ${issue.id} | Letters to Steve`}>
+        <div className="site-shell issue-page">
+          <SteveHeader />
+          <main>
+            <p className="back-link">
+              <a href={routes.home.href()}>all letters</a>
+            </p>
+            <IssueArticle issue={issue} />
+          </main>
+        </div>
+      </Document>
+    )
+  }
+}
+
+function SteveHeader() {
+  return () => (
+    <header className="steve-header">
+      <h1>
+        <a href={routes.home.href()}>letters to steve</a>
+      </h1>
+      <img src="/steve.png" width="264" height="741" alt="Steve" />
+    </header>
+  )
+}
+
+function IssueList(handle: Handle<{ issues: PublicIssue[] }>) {
+  return () => {
+    let { issues } = handle.props
 
     return (
       <section className="letters" aria-labelledby="letters-title">
-        <h2 id="letters-title">letters</h2>
+        <h2 id="letters-title">letters from steve</h2>
 
-        {letters.length === 0 ? (
+        {issues.length === 0 ? (
           <p className="empty">none yet.</p>
         ) : (
-          <div className="letter-list">
-            {letters.map((letter) => (
-              <article className="letter" key={letter.id}>
-                <p className="letter-body">{letter.body}</p>
-                <footer className="letter-meta">
-                  <strong>{letter.author}</strong>
-                  <time dateTime={new Date(letter.createdAt).toISOString()}>
-                    {formatMonth(letter.createdAt)}
-                  </time>
-                </footer>
-                {letter.publicReply ? (
-                  <div className="steve-reply">
-                    <strong>steve:</strong>
-                    <p>{letter.publicReply}</p>
-                  </div>
-                ) : null}
-              </article>
+          <div className="issue-list">
+            {issues.map((issue) => (
+              <IssueArticle issue={issue} key={issue.id} />
             ))}
           </div>
         )}
@@ -96,9 +111,42 @@ function LetterList(handle: Handle<{ letters: PublicLetter[] }>) {
   }
 }
 
-function formatMonth(timestamp: number): string {
+export function IssueArticle(handle: Handle<{ issue: PublicIssue }>) {
+  return () => {
+    let { issue } = handle.props
+    let href = routes.issue.href({ issueId: String(issue.id) })
+
+    return (
+      <article className="issue" id={`issue-${issue.id}`}>
+        <header className="issue-meta">
+          <a href={href}>letter {issue.id}</a>
+          <time dateTime={new Date(issue.publishedAt).toISOString()}>
+            {formatDate(issue.publishedAt)}
+          </time>
+        </header>
+
+        <div className="issue-questions">
+          {issue.letters.map((letter, index) => (
+            <blockquote className="issue-question" key={index}>
+              <p>{letter.body}</p>
+              <footer>{letter.author}</footer>
+            </blockquote>
+          ))}
+        </div>
+
+        <div className="issue-response">
+          <p>{issue.response}</p>
+          <strong>Steve</strong>
+        </div>
+      </article>
+    )
+  }
+}
+
+function formatDate(timestamp: number): string {
   return new Intl.DateTimeFormat('en', {
-    month: 'short',
+    day: 'numeric',
+    month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(timestamp))

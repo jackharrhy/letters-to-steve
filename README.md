@@ -1,15 +1,17 @@
 # Letters to Steve
 
-A small correspondence site built on the Remix 3 preview. Visitors can leave a public or private letter, and Steve can reply publicly or by email.
+A small correspondence site built on the Remix 3 preview. Every letter goes to Steve's private inbox. Steve can reply privately, or group one or more permitted letters into a public answer.
 
 ## What is here
 
 - A server-rendered letter form
-- Public and private letter visibility
-- A public letter wall that never includes private notes or email addresses
+- Explicit permission to publish a letter and its author's name
+- An editorial inbox where nothing is public by default
 - A protected `/steve` inbox using browser-native Basic authentication
-- Public replies stored and shown beneath the original letter
-- Private replies handed off through an email link
+- Draft and published issues containing one or more letters and Steve's response
+- Editable public copies that preserve the untouched original submissions
+- Permanent public links for published issues
+- Private email reply handoff, completion state, and archiving
 - SQLite storage and SQL migrations through Remix data tables
 - Boundary validation, a honeypot field, and same-origin checks on admin writes
 - A simple light theme and responsive layout
@@ -57,13 +59,16 @@ The current single-node SQLite setup is a good fit for a personal site. If the a
 
 ## Route map
 
-- `GET /` renders the composer and public wall
+- `GET /` renders the composer and published issues
+- `GET /letters/:issueId` renders one published issue
 - `POST /letters` validates and stores a letter
 - `GET /steve` renders the protected inbox
-- `POST /steve/letters/:letterId/reply` publishes or updates a public reply
+- `POST /steve/issues` drafts or publishes a grouped issue
+- `POST /steve/issues/:issueId` saves, publishes, unpublishes, or discards an issue
+- `POST /steve/letters/:letterId` archives, restores, or completes a private reply
 
 Routes are defined once in `app/routes.ts` and referenced through typed `href()` helpers everywhere else.
 
 ## Design direction
 
-The interface keeps the original project deliberately simple and restores its Steve artwork as the header. The letter storage, privacy controls, inbox, and reply features remain fully functional.
+The interface keeps the original project deliberately simple and restores its Steve artwork as the header. Its editorial model takes inspiration from reader-correspondence publications: submissions stay private until Steve deliberately shapes and publishes an answer.

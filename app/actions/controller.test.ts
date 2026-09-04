@@ -4,8 +4,8 @@ import { describe, it } from 'remix/test'
 import { createAppRouter } from '../router.ts'
 import { routes } from '../routes.ts'
 
-describe('letter routes', () => {
-  it('keeps private letters off the wall and lets Steve publish a reply', async () => {
+describe('editorial letter routes', () => {
+  it('keeps submissions private until Steve publishes a grouped issue', async () => {
     let previousPassword = process.env.STEVE_ADMIN_PASSWORD
     process.env.STEVE_ADMIN_PASSWORD = 'test-secret'
 
@@ -15,36 +15,50 @@ describe('letter routes', () => {
       let invalidResponse = await submitLetter(router, {
         author: '',
         body: '',
-        design: 'airmail',
+        canPublish: true,
         email: 'not-an-email',
-        visibility: 'public',
       })
       assert.equal(invalidResponse.status, 400)
 
-      let publicResponse = await submitLetter(router, {
-        author: 'Mira',
-        body: 'A public note for the wall.',
-        design: 'pressed',
-        email: 'mira@example.com',
-        visibility: 'public',
-      })
-      assert.equal(publicResponse.status, 303)
+      assert.equal(
+        (
+          await submitLetter(router, {
+            author: 'Mira',
+            body: 'Could a small habit change a life?',
+            canPublish: true,
+            email: 'mira@example.com',
+          })
+        ).status,
+        303,
+      )
+      assert.equal(
+        (
+          await submitLetter(router, {
+            author: 'Rowan',
+            body: 'How do you begin again?',
+            canPublish: true,
+            email: '',
+          })
+        ).status,
+        303,
+      )
+      assert.equal(
+        (
+          await submitLetter(router, {
+            author: 'Noah',
+            body: 'A note meant only for Steve.',
+            canPublish: false,
+            email: 'noah@example.com',
+          })
+        ).status,
+        303,
+      )
 
-      let privateResponse = await submitLetter(router, {
-        author: 'Noah',
-        body: 'A note meant only for Steve.',
-        design: 'night',
-        email: 'noah@example.com',
-        visibility: 'private',
-      })
-      assert.equal(privateResponse.status, 303)
-
-      let homeResponse = await router.fetch(request(routes.home.href()))
-      let homeHtml = await homeResponse.text()
-      assert.match(homeHtml, /A public note for the wall\./)
-      assert.doesNotMatch(homeHtml, /A note meant only for Steve\./)
-      assert.doesNotMatch(homeHtml, /mira@example\.com/)
-      assert.doesNotMatch(homeHtml, /noah@example\.com/)
+      let homeHtml = await (await router.fetch(request(routes.home.href()))).text()
+      assert.doesNotMatch(homeHtml, /Could a small habit/)
+      assert.doesNotMatch(homeHtml, /How do you begin/)
+      assert.doesNotMatch(homeHtml, /A note meant only/)
+      assert.doesNotMatch(homeHtml, /example\.com/)
 
       let unauthorizedResponse = await router.fetch(request(routes.steve.index.href()))
       assert.equal(unauthorizedResponse.status, 401)
@@ -55,34 +69,101 @@ describe('letter routes', () => {
       )
       let inboxHtml = await inboxResponse.text()
       assert.equal(inboxResponse.status, 200)
-      assert.match(inboxHtml, /A public note for the wall\./)
-      assert.match(inboxHtml, /A note meant only for Steve\./)
-      assert.match(inboxHtml, /mailto:mira%40example\.com/)
+      assert.match(inboxHtml, /Could a small habit/)
+      assert.match(inboxHtml, /How do you begin/)
+      assert.match(inboxHtml, /A note meant only/)
       assert.match(inboxHtml, /mailto:noah%40example\.com/)
 
-      let replyForm = new FormData()
-      replyForm.set('reply', 'Thanks for writing, Mira.')
-
-      let replyResponse = await router.fetch(
-        request(routes.steve.reply.href({ letterId: '1' }), {
-          body: replyForm,
-          headers: steveHeaders({ Origin: 'http://letters.test' }),
-          method: 'POST',
-        }),
+      let privateIssueResponse = await postForm(
+        router,
+        routes.steve.createIssue.href(),
+        {
+          intent: 'draft',
+          letterId: ['3'],
+          response: '',
+        },
       )
-      assert.equal(replyResponse.status, 303)
+      assert.equal(privateIssueResponse.status, 409)
 
-      let repliedHomeResponse = await router.fetch(request(routes.home.href()))
-      assert.match(await repliedHomeResponse.text(), /Thanks for writing, Mira\./)
+      let draftResponse = await postForm(router, routes.steve.createIssue.href(), {
+        intent: 'draft',
+        letterId: ['1', '2'],
+        response: 'A beginning of an answer.',
+      })
+      assert.equal(draftResponse.status, 303)
 
-      let privateReplyResponse = await router.fetch(
-        request(routes.steve.reply.href({ letterId: '2' }), {
-          body: replyForm,
-          headers: steveHeaders(),
-          method: 'POST',
-        }),
+      homeHtml = await (await router.fetch(request(routes.home.href()))).text()
+      assert.doesNotMatch(homeHtml, /A beginning of an answer/)
+      assert.equal(
+        (await router.fetch(request(routes.issue.href({ issueId: '1' })))).status,
+        404,
       )
-      assert.equal(privateReplyResponse.status, 409)
+
+      let publishResponse = await postForm(
+        router,
+        routes.steve.updateIssue.href({ issueId: '1' }),
+        {
+          'author-1': 'Mira, edited',
+          'author-2': 'Rowan',
+          'body-1': 'Could a small habit change a life?',
+          'body-2': 'How do you begin again?',
+          intent: 'publish',
+          response: 'Begin with the thing small enough to do today.',
+        },
+      )
+      assert.equal(publishResponse.status, 303)
+
+      let publishedHome = await router.fetch(request(routes.home.href()))
+      let publishedHtml = await publishedHome.text()
+      assert.equal(publishedHome.status, 200)
+      assert.match(publishedHtml, /Mira, edited/)
+      assert.match(publishedHtml, /Could a small habit/)
+      assert.match(publishedHtml, /How do you begin/)
+      assert.match(publishedHtml, /Begin with the thing small enough/)
+      assert.doesNotMatch(publishedHtml, /A note meant only/)
+      assert.doesNotMatch(publishedHtml, /example\.com/)
+
+      let issueResponse = await router.fetch(request(routes.issue.href({ issueId: '1' })))
+      assert.equal(issueResponse.status, 200)
+      assert.match(await issueResponse.text(), /Begin with the thing small enough/)
+
+      let editedInboxHtml = await (
+        await router.fetch(request(routes.steve.index.href(), { headers: steveHeaders() }))
+      ).text()
+      assert.match(editedInboxHtml, /original/)
+      assert.match(editedInboxHtml, />Mira</)
+
+      let unpublishResponse = await postForm(
+        router,
+        routes.steve.updateIssue.href({ issueId: '1' }),
+        {
+          'author-1': 'Mira, edited',
+          'author-2': 'Rowan',
+          'body-1': 'Could a small habit change a life?',
+          'body-2': 'How do you begin again?',
+          intent: 'unpublish',
+          response: 'Begin with the thing small enough to do today.',
+        },
+      )
+      assert.equal(unpublishResponse.status, 303)
+      assert.doesNotMatch(
+        await (await router.fetch(request(routes.home.href()))).text(),
+        /Begin with the thing small enough/,
+      )
+
+      let privateReplyResponse = await postForm(
+        router,
+        routes.steve.updateLetter.href({ letterId: '3' }),
+        { intent: 'private-replied' },
+      )
+      assert.equal(privateReplyResponse.status, 303)
+
+      let restoreResponse = await postForm(
+        router,
+        routes.steve.updateLetter.href({ letterId: '3' }),
+        { intent: 'restore' },
+      )
+      assert.equal(restoreResponse.status, 303)
     } finally {
       await database.close()
       if (previousPassword === undefined) delete process.env.STEVE_ADMIN_PASSWORD
@@ -96,20 +177,47 @@ async function submitLetter(
   values: {
     author: string
     body: string
-    design: string
+    canPublish: boolean
     email: string
-    visibility: string
   },
 ): Promise<Response> {
-  let form = new FormData()
-  form.set('author', values.author)
-  form.set('body', values.body)
-  form.set('design', values.design)
-  form.set('email', values.email)
-  form.set('visibility', values.visibility)
-  form.set('company', '')
+  return postForm(
+    router,
+    routes.createLetter.href(),
+    {
+      author: values.author,
+      body: values.body,
+      canPublish: values.canPublish ? 'yes' : undefined,
+      company: '',
+      email: values.email,
+    },
+    false,
+  )
+}
 
-  return router.fetch(request(routes.createLetter.href(), { body: form, method: 'POST' }))
+async function postForm(
+  router: Awaited<ReturnType<typeof createAppRouter>>['router'],
+  pathname: string,
+  values: Record<string, string | string[] | undefined>,
+  authenticate = true,
+): Promise<Response> {
+  let form = new FormData()
+  for (let [name, value] of Object.entries(values)) {
+    if (value === undefined) continue
+    if (Array.isArray(value)) {
+      for (let item of value) form.append(name, item)
+    } else {
+      form.set(name, value)
+    }
+  }
+
+  return router.fetch(
+    request(pathname, {
+      body: form,
+      headers: authenticate ? steveHeaders({ Origin: 'http://letters.test' }) : undefined,
+      method: 'POST',
+    }),
+  )
 }
 
 function request(pathname: string, init?: RequestInit): Request {
