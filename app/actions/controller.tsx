@@ -54,7 +54,7 @@ export default createController(routes, {
       let parsed = s.parseSafe(letterFormSchema, formValue, {
         errorMap({ code, defaultMessage }) {
           if (code === 'string.min_length') return 'This field cannot be empty.'
-          if (code === 'string.max_length') return 'This is a little too long for the card.'
+          if (code === 'string.max_length') return 'This is too long.'
           return defaultMessage
         },
       })
@@ -103,10 +103,8 @@ function toPublicLetter(letter: Letter): PublicLetter {
     id: letter.id,
     author: letter.author,
     body: letter.body,
-    design: letter.design,
     publicReply: letter.public_reply,
     createdAt: letter.created_at,
-    repliedAt: letter.replied_at,
   }
 }
 

@@ -14,42 +14,35 @@ export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
     let { letters, setupRequired = false } = handle.props
 
     return (
-      <Document title="Steve's inbox | Letters to Steve" description="Steve's private letter inbox.">
+      <Document title="Steve's inbox | Letters to Steve" description="Steve's private inbox.">
         <div className="admin-shell">
           <header className="admin-header">
-            <div>
-              <a href={routes.home.href()}>Letters to Steve</a>
-              <h1>Steve&apos;s inbox</h1>
-            </div>
-            <p>{letters.length} letter{letters.length === 1 ? '' : 's'}</p>
+            <a href={routes.home.href()}>letters to steve</a>
+            <h1>inbox ({letters.length})</h1>
           </header>
 
           <main>
             {setupRequired ? (
-              <section className="setup-card">
-                <h2>One bit of setup first</h2>
+              <section className="setup">
+                <h2>setup required</h2>
                 <p>
-                  Set <code>STEVE_ADMIN_PASSWORD</code> in the environment, then reload this page.
-                  Sign in with the username <code>steve</code>.
+                  Set <code>STEVE_ADMIN_PASSWORD</code>, then sign in as <code>steve</code>.
                 </p>
               </section>
             ) : letters.length === 0 ? (
-              <section className="inbox-empty">
-                <h2>The inbox is empty.</h2>
-                <p>New letters will appear here, including notes marked for Steve only.</p>
-              </section>
+              <p className="empty">no letters.</p>
             ) : (
               <div className="inbox-list">
                 {letters.map((letter) => (
                   <article className="inbox-letter" id={`letter-${letter.id}`} key={letter.id}>
                     <header>
                       <div>
-                        <p className="inbox-author">{letter.author}</p>
-                        <p className="inbox-date">{formatDate(letter.created_at)}</p>
+                        <strong>{letter.author}</strong>
+                        <time dateTime={new Date(letter.created_at).toISOString()}>
+                          {formatDate(letter.created_at)}
+                        </time>
                       </div>
-                      <span className={`visibility-label visibility-${letter.visibility}`}>
-                        {letter.visibility === 'public' ? 'On the wall' : 'For Steve only'}
-                      </span>
+                      <span>{letter.visibility}</span>
                     </header>
 
                     <p className="inbox-body">{letter.body}</p>
@@ -57,9 +50,7 @@ export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
                     <div className="inbox-actions">
                       {letter.visibility === 'public' ? (
                         <form action={routes.steve.reply.href({ letterId: String(letter.id) })} method="post">
-                          <label htmlFor={`reply-${letter.id}`}>
-                            {letter.public_reply ? 'Edit public reply' : 'Write a public reply'}
-                          </label>
+                          <label htmlFor={`reply-${letter.id}`}>reply</label>
                           <textarea
                             id={`reply-${letter.id}`}
                             name="reply"
@@ -68,24 +59,13 @@ export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
                             required
                             defaultValue={letter.public_reply ?? ''}
                           />
-                          <button type="submit">
-                            {letter.public_reply ? 'Update reply' : 'Post reply'}
-                          </button>
+                          <button type="submit">{letter.public_reply ? 'update' : 'post'}</button>
                         </form>
-                      ) : (
-                        <p className="private-note">This letter will never appear on the public wall.</p>
-                      )}
+                      ) : null}
 
                       {letter.email ? (
-                        <a
-                          className="email-link"
-                          href={privateReplyHref(letter.email, letter.author)}
-                        >
-                          Reply by email
-                        </a>
-                      ) : (
-                        <p className="no-email">No email address was left.</p>
-                      )}
+                        <a href={privateReplyHref(letter.email, letter.author)}>email</a>
+                      ) : null}
                     </div>
                   </article>
                 ))}

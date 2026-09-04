@@ -1,10 +1,10 @@
 # Letters to Steve
 
-A small correspondence site built on the Remix 3 preview. Visitors write on a card, choose whether the note is public or private, and can leave an email address for a private reply. Steve gets a password-protected inbox where he can publish a reply beneath a public letter or open a private email response.
+A small correspondence site built on the Remix 3 preview. Visitors can leave a public or private letter, and Steve can reply publicly or by email.
 
 ## What is here
 
-- A server-rendered letter composer with four paper designs
+- A server-rendered letter form
 - Public and private letter visibility
 - A public letter wall that never includes private notes or email addresses
 - A protected `/steve` inbox using browser-native Basic authentication
@@ -12,9 +12,9 @@ A small correspondence site built on the Remix 3 preview. Visitors write on a ca
 - Private replies handed off through an email link
 - SQLite storage and SQL migrations through Remix data tables
 - Boundary validation, a honeypot field, and same-origin checks on admin writes
-- Light and dark themes, reduced-motion handling, and responsive layouts
+- A simple light theme and responsive layout
 
-The paper picker uses native radio controls and CSS, so the complete public flow works without client JavaScript.
+The complete public flow works without client JavaScript.
 
 ## Requirements
 
@@ -66,4 +66,4 @@ Routes are defined once in `app/routes.ts` and referenced through typed `href()`
 
 ## Design direction
 
-The interaction takes inspiration from the tactile card composer at [ky.fyi/guestbook](https://ky.fyi/guestbook), but the visual system, assets, copy, and implementation here are original. The correspondence-desk image was generated specifically for this project, and the included Manrope and IBM Plex Mono font files are locally hosted.
+The interface keeps the original project deliberately simple and restores its Steve artwork as the header. The letter storage, privacy controls, inbox, and reply features remain fully functional.
