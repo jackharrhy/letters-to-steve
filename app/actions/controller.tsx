@@ -13,6 +13,7 @@ import { routes } from '../routes.ts'
 import {
   HomePage,
   IssuePage,
+  WritePage,
   type FormErrors,
   type LetterFormValues,
   type PublicIssue,
@@ -28,7 +29,7 @@ const letterFormSchema = f.object({
       'Enter a valid email address or leave this blank.',
     ),
   ),
-  body: f.field(trimmedString.pipe(minLength(1), maxLength(420))),
+  body: f.field(trimmedString.pipe(minLength(1), maxLength(5000))),
   canPublish: f.field(s.defaulted(s.string(), '')),
   company: f.field(s.defaulted(s.string(), '')),
 })
@@ -44,10 +45,14 @@ export default createController(routes, {
       let publicIssues = await findPublicIssues(database)
 
       return context.render(
-        <HomePage
-          issues={publicIssues}
-          sent={context.url.searchParams.get('sent') === '1'}
-        />,
+        <HomePage issues={publicIssues} />,
+        { headers: { 'Cache-Control': 'no-store' } },
+      )
+    },
+
+    async write(context) {
+      return context.render(
+        <WritePage sent={context.url.searchParams.get('sent') === '1'} />,
         { headers: { 'Cache-Control': 'no-store' } },
       )
     },
@@ -89,9 +94,8 @@ export default createController(routes, {
 
       if (!parsed.success) {
         return context.render(
-          <HomePage
+          <WritePage
             errors={issuesToErrors(parsed.issues)}
-            issues={await findPublicIssues(database)}
             values={readFormValues(formValue)}
           />,
           { status: 400, headers: { 'Cache-Control': 'no-store' } },
@@ -99,7 +103,7 @@ export default createController(routes, {
       }
 
       if (parsed.value.company !== '') {
-        return redirect(`${routes.home.href()}?sent=1#write`, 303)
+        return redirect(`${routes.write.href()}?sent=1#write`, 303)
       }
 
       await database.create(letters, {
@@ -112,7 +116,7 @@ export default createController(routes, {
         private_replied_at: null,
       })
 
-      return redirect(`${routes.home.href()}?sent=1#write`, 303)
+      return redirect(`${routes.write.href()}?sent=1#write`, 303)
     },
   },
 })

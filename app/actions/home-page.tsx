@@ -26,8 +26,11 @@ export interface LetterFormValues {
 export type FormErrors = Record<string, string | undefined>
 
 interface HomePageProps {
-  errors?: FormErrors
   issues: PublicIssue[]
+}
+
+interface WritePageProps {
+  errors?: FormErrors
   sent?: boolean
   values?: LetterFormValues
 }
@@ -41,16 +44,45 @@ const defaultValues: LetterFormValues = {
 
 export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
-    let { errors = {}, issues, sent = false, values = defaultValues } = handle.props
+    let { issues } = handle.props
 
     return (
       <Document>
-        <div className="site-shell">
+        <div className="site-shell home-page">
           <SteveHeader />
 
           <main>
-            <CardComposer errors={errors} sent={sent} values={values} />
+            <div className="write-prompt">
+              <a className="button-link" href={routes.write.href()}>
+                write to steve
+              </a>
+            </div>
             <IssueList issues={issues} />
+          </main>
+
+          <footer className="site-footer">
+            <a className="footer-link" href={routes.steve.index.href()}>
+              steve login
+            </a>
+          </footer>
+        </div>
+      </Document>
+    )
+  }
+}
+
+export function WritePage(handle: Handle<WritePageProps>) {
+  return () => {
+    let { errors = {}, sent = false, values = defaultValues } = handle.props
+
+    return (
+      <Document title="Write to Steve | Letters to Steve">
+        <div className="write-shell">
+          <header className="write-header">
+            <a href={routes.home.href()}>letters to steve</a>
+          </header>
+          <main className="write-main">
+            <CardComposer errors={errors} sent={sent} values={values} />
           </main>
         </div>
       </Document>

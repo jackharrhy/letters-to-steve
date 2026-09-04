@@ -14,8 +14,8 @@ export function CardComposer(handle: Handle<CardComposerProps>) {
     let { errors, sent, values } = handle.props
 
     return (
-      <section className="composer" id="write" aria-labelledby="composer-title">
-        <h2 id="composer-title">dear steve,</h2>
+      <section className="composer write-composer" id="write" aria-labelledby="composer-title">
+        <h1 id="composer-title">dear steve,</h1>
 
         {sent ? (
           <p className="form-success" role="status">
@@ -30,14 +30,16 @@ export function CardComposer(handle: Handle<CardComposerProps>) {
         ) : null}
 
         <form action={routes.createLetter.href()} method="post">
-          <div className="field">
+          <div className="field letter-field">
             <label htmlFor="letter-body">letter</label>
             <textarea
               id="letter-body"
+              className="letter-textarea"
               name="body"
-              rows={7}
-              maxLength={420}
+              rows={18}
+              maxLength={5000}
               required
+              autoFocus
               aria-invalid={Boolean(errors.body)}
               aria-describedby={errors.body ? 'body-error' : undefined}
               defaultValue={values.body}

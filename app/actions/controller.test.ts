@@ -12,6 +12,19 @@ describe('editorial letter routes', () => {
     let { database, router } = await createAppRouter({ databasePath: ':memory:' })
 
     try {
+      let initialHomeHtml = await (
+        await router.fetch(request(routes.home.href()))
+      ).text()
+      assert.match(initialHomeHtml, /href="\/write"[^>]*>\s*write to steve/)
+      assert.match(initialHomeHtml, /href="\/steve"[^>]*>\s*steve login/)
+      assert.doesNotMatch(initialHomeHtml, /name="body"/)
+
+      let writeResponse = await router.fetch(request(routes.write.href()))
+      let writeHtml = await writeResponse.text()
+      assert.equal(writeResponse.status, 200)
+      assert.match(writeHtml, /<h1[^>]*>dear steve,/)
+      assert.match(writeHtml, /class="letter-textarea"/)
+
       let invalidResponse = await submitLetter(router, {
         author: '',
         body: '',
@@ -19,18 +32,16 @@ describe('editorial letter routes', () => {
         email: 'not-an-email',
       })
       assert.equal(invalidResponse.status, 400)
+      assert.match(await invalidResponse.text(), /Write to Steve/)
 
-      assert.equal(
-        (
-          await submitLetter(router, {
-            author: 'Mira',
-            body: 'Could a small habit change a life?',
-            canPublish: true,
-            email: 'mira@example.com',
-          })
-        ).status,
-        303,
-      )
+      let firstLetterResponse = await submitLetter(router, {
+        author: 'Mira',
+        body: 'Could a small habit change a life?',
+        canPublish: true,
+        email: 'mira@example.com',
+      })
+      assert.equal(firstLetterResponse.status, 303)
+      assert.equal(firstLetterResponse.headers.get('Location'), '/write?sent=1#write')
       assert.equal(
         (
           await submitLetter(router, {

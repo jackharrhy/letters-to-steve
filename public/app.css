@@ -53,6 +53,9 @@ a {
 }
 
 .site-shell {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
   padding: 34px 0 80px;
 }
 
@@ -62,7 +65,7 @@ a {
 }
 
 .steve-header h1,
-.composer h2,
+.composer h1,
 .letters h2,
 .admin-header h1,
 .admin-section h2,
@@ -88,13 +91,12 @@ a {
   margin: 0 auto;
 }
 
-.composer,
 .letters {
   padding-top: 30px;
   border-top: 1px solid var(--line);
 }
 
-.composer h2,
+.composer h1,
 .letters h2,
 .admin-section h2 {
   margin: 0 0 20px;
@@ -182,7 +184,8 @@ input[type="checkbox"] {
   accent-color: var(--accent);
 }
 
-button {
+button,
+.button-link {
   min-height: 42px;
   justify-self: start;
   padding: 8px 18px;
@@ -192,15 +195,24 @@ button {
   color: #fafafa;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   border-color: var(--accent-dark);
   background: var(--accent-dark);
 }
 
-button:active {
+button:active,
+.button-link:active {
   transform: translateY(1px);
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .secondary-button {
@@ -263,8 +275,37 @@ button:active {
   overflow: hidden;
 }
 
+.write-prompt {
+  margin: 0;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
 .letters {
   margin-top: 64px;
+}
+
+.site-footer {
+  margin-top: auto;
+  padding-top: 72px;
+  text-align: center;
+}
+
+.footer-link {
+  display: inline-block;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  border-color: #aaa9a4;
+  color: var(--ink);
 }
 
 .empty {
@@ -350,6 +391,39 @@ button:active {
 .back-link {
   margin: 0;
   font-size: 13px;
+}
+
+.write-shell {
+  display: flex;
+  width: min(100% - 40px, 860px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 28px 0 48px;
+  flex-direction: column;
+}
+
+.write-header {
+  margin-bottom: 36px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.write-main,
+.write-composer {
+  width: 100%;
+}
+
+.write-main {
+  display: flex;
+  flex: 1;
+}
+
+.write-composer h1 {
+  font-size: 28px;
+}
+
+.letter-textarea {
+  min-height: clamp(320px, 55dvh, 640px);
 }
 
 .admin-shell {
@@ -517,6 +591,15 @@ code {
     padding-top: 26px;
   }
 
+  .write-shell {
+    width: min(100% - 28px, 860px);
+    padding-top: 22px;
+  }
+
+  .write-header {
+    margin-bottom: 28px;
+  }
+
   .steve-header {
     margin-bottom: 34px;
   }
@@ -542,7 +625,8 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button:active {
+  button:active,
+  .button-link:active {
     transform: none;
   }
 }

@@ -36,7 +36,7 @@ const updateLetterSchema = s.object({
 
 const publicLetterSchema = s.object({
   author: trimmedString.pipe(minLength(1), maxLength(40)),
-  body: trimmedString.pipe(minLength(1), maxLength(420)),
+  body: trimmedString.pipe(minLength(1), maxLength(5000)),
 })
 
 export default createController(routes.steve, {

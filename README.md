@@ -4,7 +4,7 @@ A small correspondence site built on the Remix 3 preview. Every letter goes to S
 
 ## What is here
 
-- A server-rendered letter form
+- A dedicated, distraction-free writing page
 - Explicit permission to publish a letter and its author's name
 - An editorial inbox where nothing is public by default
 - A protected `/steve` inbox using browser-native Basic authentication
@@ -59,7 +59,8 @@ The current single-node SQLite setup is a good fit for a personal site. If the a
 
 ## Route map
 
-- `GET /` renders the composer and published issues
+- `GET /` renders published issues and links to the writing and admin pages
+- `GET /write` renders the letter composer
 - `GET /letters/:issueId` renders one published issue
 - `POST /letters` validates and stores a letter
 - `GET /steve` renders the protected inbox

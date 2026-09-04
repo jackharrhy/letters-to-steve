@@ -220,7 +220,7 @@ function IssueEditor(handle: Handle<{ issue: AdminIssue }>) {
                     id={`body-${letter.id}`}
                     name={`body-${letter.id}`}
                     rows={4}
-                    maxLength={420}
+                    maxLength={5000}
                     required
                     defaultValue={letter.public_body}
                   />
