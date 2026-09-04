@@ -56,7 +56,7 @@ a {
   display: flex;
   min-height: 100dvh;
   flex-direction: column;
-  padding: 34px 0 80px;
+  padding: 34px 0 24px;
 }
 
 .steve-header {
@@ -288,24 +288,22 @@ button:active,
 
 .site-footer {
   margin-top: auto;
-  padding-top: 72px;
+  padding-top: 36px;
   text-align: center;
 }
 
 .footer-link {
-  display: inline-block;
-  padding: 7px 12px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 650;
-  text-decoration: none;
+  color: #6f6f6a;
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration-color: #b1b1ac;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .footer-link:hover {
-  border-color: #aaa9a4;
   color: var(--ink);
+  text-decoration-color: currentColor;
 }
 
 .empty {
