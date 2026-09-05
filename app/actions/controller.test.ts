@@ -18,6 +18,19 @@ describe('editorial letter routes', () => {
     let { database, router } = await createAppRouter({ databasePath: ':memory:' })
 
     try {
+      assert.match(
+        await (await router.fetch(request(routes.home.href()))).text(),
+        /class="site-closed-shell"/,
+      )
+      assert.equal(
+        (
+          await postForm(router, routes.steve.updateSite.href(), {
+            enabled: 'on',
+          })
+        ).status,
+        303,
+      )
+
       let initialHomeHtml = await (
         await router.fetch(request(routes.home.href()))
       ).text()
@@ -197,6 +210,19 @@ describe('editorial letter routes', () => {
     let { database, router } = await createAppRouter({ databasePath: ':memory:' })
 
     try {
+      assert.match(
+        await (await router.fetch(request(routes.home.href()))).text(),
+        /class="site-closed-shell"/,
+      )
+      assert.equal(
+        (
+          await postForm(router, routes.steve.updateSite.href(), {
+            enabled: 'on',
+          })
+        ).status,
+        303,
+      )
+
       let closeResponse = await postForm(router, routes.steve.updateSite.href(), {
         enabled: 'off',
       })
@@ -269,6 +295,15 @@ describe('editorial letter routes', () => {
     })
 
     try {
+      assert.equal(
+        (
+          await postForm(router, routes.steve.updateSite.href(), {
+            enabled: 'on',
+          })
+        ).status,
+        303,
+      )
+
       let draftToken = randomUUID()
       let sourceImage = await sharp({
         create: {

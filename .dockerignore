@@ -1,0 +1,8 @@
+.agents
+.env
+.git
+.github
+db/*.sqlite
+db/*.sqlite-*
+node_modules
+tmp

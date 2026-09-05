@@ -56,6 +56,10 @@ npm run db:migrate # apply pending migrations manually
 
 The runtime applies pending migrations during startup. The manual database commands are useful for deployment checks and maintenance.
 
+New databases begin with the public site closed. Sign in at `/steve` and use the public-site
+switch when it is ready to open. Set `TRUST_PROXY=true` only when the Node server is reachable
+exclusively through a trusted reverse proxy that overwrites forwarding headers.
+
 ## Data and configuration
 
 The default database is `db/letters.sqlite`. Override it with `DATABASE_PATH`. Processed images are
