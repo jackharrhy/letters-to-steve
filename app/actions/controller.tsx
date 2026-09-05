@@ -10,6 +10,7 @@ import { redirect } from 'remix/response/redirect'
 
 import { assets } from '../assets.ts'
 import { attachments, fontKeys, issueLetters, issues, letters, type Issue } from '../data/schema.ts'
+import { isSiteEnabled } from '../data/site-settings.ts'
 import { attachmentStoreContext } from '../middleware/attachments.ts'
 import { databaseContext } from '../middleware/database.ts'
 import { routes } from '../routes.ts'
@@ -22,6 +23,7 @@ import {
 import {
   HomePage,
   IssuePage,
+  SiteClosedPage,
   WritePage,
   type FormErrors,
   type LetterFormValues,
@@ -56,6 +58,11 @@ export default createController(routes, {
 
     async home(context) {
       let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database))) {
+        return context.render(<SiteClosedPage />, {
+          headers: { 'Cache-Control': 'no-store' },
+        })
+      }
       let publicIssues = await findPublicIssues(database)
 
       return context.render(
@@ -65,6 +72,13 @@ export default createController(routes, {
     },
 
     async write(context) {
+      let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database))) {
+        return context.render(<SiteClosedPage />, {
+          headers: { 'Cache-Control': 'no-store' },
+        })
+      }
+
       return context.render(
         <WritePage
           draftToken={randomUUID()}
@@ -75,10 +89,16 @@ export default createController(routes, {
     },
 
     async issue(context) {
+      let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database))) {
+        return context.render(<SiteClosedPage />, {
+          headers: { 'Cache-Control': 'no-store' },
+        })
+      }
+
       let issueId = readId(context.params.issueId)
       if (issueId === null) return new Response('Letter not found.', { status: 404 })
 
-      let database = context.get(databaseContext)
       let issue = await database.find(issues, issueId)
       if (!issue || issue.state !== 'published' || issue.published_at === null) {
         return new Response('Letter not found.', { status: 404 })
@@ -102,6 +122,15 @@ export default createController(routes, {
       if (origin && origin !== new URL(context.request.url).origin) {
         return new Response('Cross-origin form submissions are not allowed.', { status: 403 })
       }
+
+      let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database))) {
+        return context.render(<SiteClosedPage />, {
+          status: 503,
+          headers: { 'Cache-Control': 'no-store' },
+        })
+      }
+
       let formValue = await context.request.formData()
       let parsed = s.parseSafe(letterFormSchema, formValue, {
         errorMap({ code, defaultMessage }) {
@@ -111,7 +140,6 @@ export default createController(routes, {
         },
       })
 
-      let database = context.get(databaseContext)
       let attachmentStore = context.get(attachmentStoreContext)
 
       if (!parsed.success) {

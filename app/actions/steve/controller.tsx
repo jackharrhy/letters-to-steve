@@ -6,6 +6,7 @@ import { createController } from 'remix/router'
 import { redirect } from 'remix/response/redirect'
 
 import { attachments, fontKeys, issueLetters, issues, letters } from '../../data/schema.ts'
+import { isSiteEnabled, setSiteEnabled } from '../../data/site-settings.ts'
 import { databaseContext } from '../../middleware/database.ts'
 import { routes } from '../../routes.ts'
 import {
@@ -44,6 +45,10 @@ const updateLetterSchema = s.object({
   intent: s.enum_(['archive', 'restore', 'private-replied'] as const),
 })
 
+const updateSiteSchema = s.object({
+  enabled: s.enum_(['on', 'off'] as const),
+})
+
 const publicLetterSchema = s.object({
   author: trimmedString.pipe(minLength(1), maxLength(40)),
   body: s.string().pipe(maxLength(5000)),
@@ -64,7 +69,8 @@ export default createController(routes.steve, {
       if (access === 'unauthorized') return challengeSteve()
 
       let database = context.get(databaseContext)
-      let [allLetters, allIssues, allLinks] = await Promise.all([
+      let [siteEnabled, allLetters, allIssues, allLinks] = await Promise.all([
+        isSiteEnabled(database),
         database.findMany(letters, { orderBy: ['created_at', 'desc'] }),
         database.findMany(issues, { orderBy: ['updated_at', 'desc'] }),
         database.findMany(issueLetters, {
@@ -91,9 +97,29 @@ export default createController(routes.steve, {
           }),
       }))
 
-      return context.render(<SteveInboxPage issues={adminIssues} letters={allLetters} />, {
-        headers: { 'Cache-Control': 'no-store' },
-      })
+      return context.render(
+        <SteveInboxPage
+          issues={adminIssues}
+          letters={allLetters}
+          siteEnabled={siteEnabled}
+        />,
+        {
+          headers: { 'Cache-Control': 'no-store' },
+        },
+      )
+    },
+
+    async updateSite(context) {
+      let rejection = requireSteveAction(context.request)
+      if (rejection) return rejection
+
+      let form = await context.request.formData()
+      let parsed = s.parseSafe(updateSiteSchema, { enabled: readText(form, 'enabled') })
+      if (!parsed.success) return new Response('Unknown site setting.', { status: 400 })
+
+      let database = context.get(databaseContext)
+      await setSiteEnabled(database, parsed.value.enabled === 'on')
+      return redirect(`${routes.steve.index.href()}#site-availability`, 303)
     },
 
     async createIssue(context) {

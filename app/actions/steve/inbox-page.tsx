@@ -21,11 +21,12 @@ interface SteveInboxPageProps {
   issues?: AdminIssue[]
   letters: Letter[]
   setupRequired?: boolean
+  siteEnabled?: boolean
 }
 
 export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
   return () => {
-    let { issues = [], letters, setupRequired = false } = handle.props
+    let { issues = [], letters, setupRequired = false, siteEnabled = true } = handle.props
     let inbox = letters.filter((letter) => letter.state === 'inbox')
     let archived = letters.filter((letter) => letter.state === 'archived')
     let drafts = issues.filter((issue) => issue.state === 'draft')
@@ -49,6 +50,8 @@ export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
               </section>
             ) : (
               <>
+                <SiteAvailability enabled={siteEnabled} />
+
                 <IssueSection issues={drafts} title="drafts" />
 
                 <section className="admin-section" aria-labelledby="inbox-title">
@@ -84,6 +87,41 @@ export function SteveInboxPage(handle: Handle<SteveInboxPageProps>) {
           </main>
         </div>
       </Document>
+    )
+  }
+}
+
+function SiteAvailability(handle: Handle<{ enabled: boolean }>) {
+  return () => {
+    let { enabled } = handle.props
+
+    return (
+      <section
+        className="site-availability"
+        id="site-availability"
+        aria-labelledby="site-availability-title"
+      >
+        <div>
+          <h2 id="site-availability-title">public site</h2>
+          <p>{enabled ? 'letters are open.' : 'only Steve is visible.'}</p>
+        </div>
+        <form action={routes.steve.updateSite.href()} method="post">
+          <button
+            type="submit"
+            className="site-switch"
+            role="switch"
+            aria-checked={enabled ? 'true' : 'false'}
+            aria-label={`Turn the public site ${enabled ? 'off' : 'on'}`}
+            name="enabled"
+            value={enabled ? 'off' : 'on'}
+          >
+            <span className="site-switch-track" aria-hidden="true">
+              <span />
+            </span>
+            <span>{enabled ? 'on' : 'off'}</span>
+          </button>
+        </form>
+      </section>
     )
   }
 }

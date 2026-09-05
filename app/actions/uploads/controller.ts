@@ -17,8 +17,11 @@ import {
   MAX_UPLOAD_BYTES,
   type StoredAttachment,
 } from '../../data/attachment-store.ts'
+import { isSiteEnabled } from '../../data/site-settings.ts'
 import { attachmentStoreContext } from '../../middleware/attachments.ts'
+import { databaseContext } from '../../middleware/database.ts'
 import { routes } from '../../routes.ts'
+import { getSteveAccess } from '../steve/auth.ts'
 
 const draftTokenPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -27,6 +30,11 @@ export default createController(routes.uploads, {
     async create(context) {
       let originRejection = rejectCrossOrigin(context.request)
       if (originRejection) return originRejection
+
+      let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database))) {
+        return jsonError('Letters are closed right now.', 503)
+      }
 
       let draftToken = context.request.headers.get('x-draft-token') ?? ''
       if (!draftTokenPattern.test(draftToken)) {
@@ -78,6 +86,11 @@ export default createController(routes.uploads, {
       let id = context.params.attachmentId?.toLowerCase() ?? ''
       if (!draftTokenPattern.test(id)) return new Response('Image not found.', { status: 404 })
 
+      let database = context.get(databaseContext)
+      if (!(await isSiteEnabled(database)) && getSteveAccess(context.request) !== 'authorized') {
+        return new Response('Image not found.', { status: 404 })
+      }
+
       let store = context.get(attachmentStoreContext)
       let attachment = await store.find(id)
       if (!attachment) return new Response('Image not found.', { status: 404 })
@@ -98,9 +111,9 @@ export default createController(routes.uploads, {
 
       return new Response(file.stream(), {
         headers: {
-          'Cache-Control': attachment.is_public
-            ? 'public, max-age=604800, immutable'
-            : 'private, max-age=3600',
+          // Every request must reach the availability gate so switching the site
+          // off also revokes direct attachment URLs.
+          'Cache-Control': 'private, no-cache',
           'Content-Length': String(attachment.byte_size),
           'Content-Type': attachment.mime_type,
           'X-Content-Type-Options': 'nosniff',

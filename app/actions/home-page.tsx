@@ -81,6 +81,23 @@ export function HomePage(handle: Handle<HomePageProps>) {
   }
 }
 
+export function SiteClosedPage() {
+  return () => (
+    <Document browserRuntime={false}>
+      <div className="site-closed-shell">
+        <main className="site-closed-main">
+          <img src="/steve.png" width="264" height="741" alt="Steve" />
+        </main>
+        <footer className="site-closed-footer">
+          <a className="footer-link" href={routes.steve.index.href()}>
+            steve login
+          </a>
+        </footer>
+      </div>
+    </Document>
+  )
+}
+
 export function WritePage(handle: Handle<WritePageProps>) {
   return () => {
     let { draftToken, errors = {}, sent = false, values = defaultValues } = handle.props

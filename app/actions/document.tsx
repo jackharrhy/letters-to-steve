@@ -3,6 +3,7 @@ import type { Handle, RemixNode } from 'remix/ui'
 import { browserEntryHref } from '../assets.ts'
 
 export interface DocumentProps {
+  browserRuntime?: boolean
   children?: RemixNode
   description?: string
   head?: RemixNode
@@ -13,6 +14,7 @@ export function Document(handle: Handle<DocumentProps>) {
   return () => {
     let {
       children,
+      browserRuntime = true,
       description = 'A letter for Steve.',
       head,
       title = 'Letters to Steve',
@@ -27,13 +29,13 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta name="description" content={description} />
           <meta name="theme-color" content="#f7f7f5" />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-          <link rel="stylesheet" href="/app.css?v=8" />
+          <link rel="stylesheet" href="/app.css?v=9" />
           <title>{title}</title>
           {head}
         </head>
         <body>
           {children}
-          <script type="module" src={browserEntryHref} />
+          {browserRuntime ? <script type="module" src={browserEntryHref} /> : null}
         </body>
       </html>
     )

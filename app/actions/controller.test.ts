@@ -29,7 +29,7 @@ describe('editorial letter routes', () => {
       let writeHtml = await writeResponse.text()
       assert.equal(writeResponse.status, 200)
       assert.match(writeHtml, /<h1[^>]*>dear steve,/)
-      assert.match(writeHtml, /class="letter-textarea"/)
+      assert.match(writeHtml, /class="[^"]*letter-textarea/)
       assert.match(writeHtml, /placeholder="Write your letter here\.\.\."/)
       assert.match(writeHtml, /rel="preload"[^>]+shantell-sans-latin-wght-normal\.woff2/)
 
@@ -88,6 +88,7 @@ describe('editorial letter routes', () => {
       )
       let inboxHtml = await inboxResponse.text()
       assert.equal(inboxResponse.status, 200)
+      assert.match(inboxHtml, /role="switch"[^>]+aria-checked="true"/)
       assert.match(inboxHtml, /Could a small habit/)
       assert.match(inboxHtml, /How do you begin/)
       assert.match(inboxHtml, /A note meant only/)
@@ -183,6 +184,74 @@ describe('editorial letter routes', () => {
         { intent: 'restore' },
       )
       assert.equal(restoreResponse.status, 303)
+    } finally {
+      await database.close()
+      if (previousPassword === undefined) delete process.env.STEVE_ADMIN_PASSWORD
+      else process.env.STEVE_ADMIN_PASSWORD = previousPassword
+    }
+  })
+
+  it('lets Steve close and reopen every public route', async () => {
+    let previousPassword = process.env.STEVE_ADMIN_PASSWORD
+    process.env.STEVE_ADMIN_PASSWORD = 'test-secret'
+    let { database, router } = await createAppRouter({ databasePath: ':memory:' })
+
+    try {
+      let closeResponse = await postForm(router, routes.steve.updateSite.href(), {
+        enabled: 'off',
+      })
+      assert.equal(closeResponse.status, 303)
+      assert.equal(closeResponse.headers.get('Location'), '/steve#site-availability')
+
+      for (let pathname of [routes.home.href(), routes.write.href(), '/letters/999']) {
+        let response = await router.fetch(request(pathname))
+        let html = await response.text()
+        assert.equal(response.status, 200)
+        assert.match(html, /class="site-closed-shell"/)
+        assert.match(html, /src="\/steve\.png"[^>]+alt="Steve"/)
+        assert.match(html, /href="\/steve"[^>]*>\s*steve login/)
+        assert.doesNotMatch(html, /write to steve/)
+        assert.doesNotMatch(html, /<script type="module"/)
+      }
+
+      let staleSubmission = await submitLetter(router, {
+        author: 'Mira',
+        body: 'Sent from a page that was already open.',
+        canPublish: true,
+        email: '',
+      })
+      assert.equal(staleSubmission.status, 503)
+      assert.match(await staleSubmission.text(), /class="site-closed-shell"/)
+
+      let uploadForm = new FormData()
+      uploadForm.set('image', new File([new Uint8Array([1])], 'note.png', { type: 'image/png' }))
+      let closedUpload = await router.fetch(
+        request(routes.uploads.create.href(), {
+          body: uploadForm,
+          headers: {
+            Origin: 'http://letters.test',
+            'X-Draft-Token': randomUUID(),
+          },
+          method: 'POST',
+        }),
+      )
+      assert.equal(closedUpload.status, 503)
+      assert.deepEqual(await closedUpload.json(), { error: 'Letters are closed right now.' })
+
+      let closedInbox = await router.fetch(
+        request(routes.steve.index.href(), { headers: steveHeaders() }),
+      )
+      assert.equal(closedInbox.status, 200)
+      assert.match(await closedInbox.text(), /role="switch"[^>]+aria-checked="false"/)
+
+      let openResponse = await postForm(router, routes.steve.updateSite.href(), {
+        enabled: 'on',
+      })
+      assert.equal(openResponse.status, 303)
+
+      let reopenedHtml = await (await router.fetch(request(routes.home.href()))).text()
+      assert.match(reopenedHtml, /write to steve/)
+      assert.doesNotMatch(reopenedHtml, /site-closed-shell/)
     } finally {
       await database.close()
       if (previousPassword === undefined) delete process.env.STEVE_ADMIN_PASSWORD
@@ -307,7 +376,17 @@ describe('editorial letter routes', () => {
       assert.match(publishedHtml, /steve-prose/)
 
       let publicImage = await router.fetch(request(upload.src))
-      assert.match(publicImage.headers.get('Cache-Control') ?? '', /public/)
+      assert.equal(publicImage.headers.get('Cache-Control'), 'private, no-cache')
+
+      await postForm(router, routes.steve.updateSite.href(), { enabled: 'off' })
+      assert.equal((await router.fetch(request(upload.src))).status, 404)
+      assert.equal(
+        (
+          await router.fetch(request(upload.src, { headers: steveHeaders() }))
+        ).status,
+        200,
+      )
+      await postForm(router, routes.steve.updateSite.href(), { enabled: 'on' })
 
       let unsafeDocument = JSON.stringify({
         type: 'doc',

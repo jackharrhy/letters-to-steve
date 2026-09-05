@@ -12,6 +12,7 @@ export const routes = route({
   }),
   steve: route('steve', {
     index: get('/'),
+    updateSite: post('/site'),
     createIssue: post('/issues'),
     updateIssue: post('/issues/:issueId'),
     updateLetter: post('/letters/:letterId'),

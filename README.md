@@ -11,6 +11,7 @@ A small correspondence site built on the Remix 3 preview. Every letter goes to S
 - Explicit permission to publish a letter and its author's name
 - An editorial inbox where nothing is public by default
 - A protected `/steve` inbox using browser-native Basic authentication
+- A persistent admin switch that closes every public route without taking the server offline
 - Draft and published issues containing one or more letters and Steve's response
 - Editable public copies that preserve the untouched original submissions
 - Permanent public links for published issues
@@ -75,6 +76,7 @@ The current single-node SQLite setup is a good fit for a personal site. If the a
 - `POST /uploads` validates and prepares one draft image
 - `GET /uploads/:attachmentId` streams one processed image
 - `GET /steve` renders the protected inbox
+- `POST /steve/site` opens or closes the public site
 - `POST /steve/issues` drafts or publishes a grouped issue
 - `POST /steve/issues/:issueId` saves, publishes, unpublishes, or discards an issue
 - `POST /steve/letters/:letterId` archives, restores, or completes a private reply

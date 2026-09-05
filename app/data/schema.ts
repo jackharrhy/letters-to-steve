@@ -87,3 +87,14 @@ export const attachments = table({
 })
 
 export type Attachment = TableRow<typeof attachments>
+
+export const siteSettings = table({
+  name: 'site_settings',
+  columns: {
+    id: c.integer().primaryKey(),
+    is_enabled: c.boolean().notNull(),
+    updated_at: c.integer().notNull(),
+  },
+})
+
+export type SiteSettings = TableRow<typeof siteSettings>

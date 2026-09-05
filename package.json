@@ -6,7 +6,7 @@
     "dev": "NODE_ENV=development node --env-file-if-exists=.env --watch --import remix/node-tsx server.ts",
     "hmr": "NODE_ENV=development node --env-file-if-exists=.env hmr.ts",
     "start": "NODE_ENV=production node --env-file-if-exists=.env --import remix/node-tsx server.ts",
-    "test": "NODE_ENV=test node --import remix/node-tsx --test",
+    "test": "NODE_ENV=test remix test --type server",
     "db:migrate": "remix db migrate",
     "db:status": "remix db status",
     "typecheck": "tsc --noEmit"
@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@types/node": "latest",
+    "playwright": "^1.63.0",
     "typescript": "latest"
   },
   "allowScripts": {
